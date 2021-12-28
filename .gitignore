@@ -1,6 +1,23 @@
 
-# Created by https://www.toptal.com/developers/gitignore/api/macos,linux,visualstudiocode,xcode
-# Edit at https://www.toptal.com/developers/gitignore?templates=macos,linux,visualstudiocode,xcode
+# Created by https://www.toptal.com/developers/gitignore/api/macos,linux,visualstudiocode,xcode,cmake
+# Edit at https://www.toptal.com/developers/gitignore?templates=macos,linux,visualstudiocode,xcode,cmake
+
+### CMake ###
+CMakeLists.txt.user
+CMakeCache.txt
+CMakeFiles
+CMakeScripts
+Testing
+Makefile
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps
+
+### CMake Patch ###
+# External projects
+*-prefix/
 
 ### Linux ###
 *~
@@ -100,4 +117,4 @@ DerivedData/
 !*.xcworkspace/contents.xcworkspacedata
 **/xcshareddata/WorkspaceSettings.xcsettings
 
-# End of https://www.toptal.com/developers/gitignore/api/macos,linux,visualstudiocode,xcode
+# End of https://www.toptal.com/developers/gitignore/api/macos,linux,visualstudiocode,xcode,cmake

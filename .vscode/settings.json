@@ -1,0 +1,10 @@
+{
+    "files.associations": {
+        "gpio.h": "c",
+        "stdint.h": "c",
+        "stdbool.h": "c",
+        "stddef.h": "c",
+        "console.h": "c"
+    },
+    "C_Cpp.dimInactiveRegions": false
+}

@@ -51,5 +51,11 @@ _start:
 
     // jump to C code, should not return
 4:  bl      main
-    // for failsafe, halt this core too
-    b       1b
+
+    // for failsafe, abort if we come back
+    ldr     x0, =Lstartup_returned
+    b       panic_simple
+
+.section ".rodata"
+Lstartup_returned:
+.string "main() must not return!"

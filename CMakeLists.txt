@@ -40,6 +40,8 @@ add_executable(kernel
     
     kernel/machine/io/mini_uart/mini_uart.c
     kernel/machine/io/console/console.c
+
+    kernel/machine/routines/routines.S
 )
 target_link_options(kernel PUBLIC "LINKER:-T,${CMAKE_SOURCE_DIR}/kernel/link.ld")
 target_include_directories(kernel PRIVATE "${CMAKE_SOURCE_DIR}/kernel")

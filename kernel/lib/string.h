@@ -24,5 +24,7 @@ size_t strlcat(char*, const char*, size_t);
 char* strtok_r(char*, const char*, char**);
 size_t strnlen(const char*, size_t);
 
+void *bzero(void *b, size_t size);
+
 
 #endif /* LIB_STRING */

@@ -316,3 +316,12 @@ size_t strlcat(char* dst, const char* src, size_t size) {
   }
   return src_len + dst_len;
 }
+
+void *bzero(void *b, size_t size) {
+  uint8_t *b_ptr = b;
+  for (size_t i = 0; i < size; i++) {
+    b_ptr[i] = 0x00;
+  }
+  
+  return b;
+}

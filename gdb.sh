@@ -1,1 +1,1 @@
-gdb-multiarch build/kernel -ex "target remote localhost:1234; tui en"
+gdb-multiarch build/kernel -ex "target remote localhost:1234"

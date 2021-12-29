@@ -20,7 +20,18 @@ void panic_simple(const char *message) {
     debug_panic();
 }
 
-void panic_verbose(const char* file, int line, const char* function, const char* message, ...) {
+void panic_formatted(const char *message, ...) {
+    va_list args;
+    
+    printf("\n\n****************PANIC****************\n");
+    va_start(args, message);
+    vprintf(message, args);
+    va_end(args);
+
+    debug_panic();
+}
+
+void panic_macro(const char* file, int line, const char* function, const char* message, ...) {
     va_list args;
 
     printf(

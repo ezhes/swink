@@ -9,11 +9,11 @@ Although I always strive for production quality code, this is chiefly a hobby/re
 - [x] Exceptions/interrupts
 - [x] Power management
 - [ ] Virtual memory
-- [ ] Fast memory protection management through [Lifeguard](/planning/lifeguard.md)
-- [ ] Page table and system configuration protection under kernel ROP through [System Integrity Guard](/planning/system_integrity_guard.md)
+- [ ] Fast memory protection management through [Lifeguard](/docs/watchpoints/lifeguard.md)
+- [ ] Page table and system configuration protection under kernel ROP through [System Integrity Guard](/docs/watchpoints/system_integrity_guard.md)
 - [ ] Kernel threads
 - [ ] User processes
-- [ ] Fast user space context switching through [Lifeguard](/planning/lifeguard.md)
+- [ ] Fast user space context switching through [Lifeguard](/docs/watchpoints/lifeguard.md)
 - [ ] Multi-core support
 
 ### Hardware support

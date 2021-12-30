@@ -13,6 +13,14 @@ SECTIONS
         __bss_end = .;
     }
     _end = .;
+    .primary_cpu_boot_stacks :
+    {
+        . = ALIGN(16);
+        . = . + 16384;
+        __primary_cpu_boot_stack  = .;
+        . = . + 16384;
+        __primary_cpu_exception_stack  = .;
+    }
 
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }

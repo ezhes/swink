@@ -1,27 +1,3 @@
-/*
- * Copyright (C) 2018 bzt (bztsrc@github)
- *
- * Permission is hereby granted, free of charge, to any person
- * obtaining a copy of this software and associated documentation
- * files (the "Software"), to deal in the Software without
- * restriction, including without limitation the rights to use, copy,
- * modify, merge, publish, distribute, sublicense, and/or sell copies
- * of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
- *
- * The above copyright notice and this permission notice shall be
- * included in all copies or substantial portions of the Software.
- *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
- * NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
- * HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
- * WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
- * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER
- * DEALINGS IN THE SOFTWARE.
- *
- */
  #include "lib/asm_utils.h"
 
 .section ".text.boot"
@@ -72,22 +48,23 @@ Lstart_in_el1:
     /* Enable NEON */
     mov     x0, #(0b11<<20)                /* FPEN_ENABLE */
     msr     cpacr_el1, x0
-    // read cpu id, stop secondary cores
+
+    /* Spin secondary cores */
     mrs     x1, mpidr_el1
     and     x1, x1, #3
     cbnz    x1, _secondary_core_prepare
 
-    //Setup interrupts
+    /* Setup bootstrap interrupts */
     adr     x1, exception_vectors_el1
     msr     vbar_el1, x1
     msr     DAIFClr, #DAIF_ALL           /* enable all exceptions */
 
-    /* Setup primary stack in SPSel 0 just above the code segment */
-    adr     x1, _start
+    /* Setup primary stack in SPSel 0 to the pre-allocated boot stack */
+    adr     x1, __primary_cpu_boot_stack
     mov     sp, x1
     /* Prepare exception stack */
     msr     SPSel, #1
-    sub     x1, x1, 1024
+    adr     x1, __primary_cpu_exception_stack
     mov     sp, x1
     msr     SPSel, #0
 
@@ -99,15 +76,15 @@ Lstart_in_el1:
     sub     w2, w2, #1
     cbnz    w2, 3b
 
-    // jump to C code, should not return
-4:  b      _primary_core_boot
+4:
+    b      _primary_core_boot
 
 
 _primary_core_boot:
-    bl      main
+    bl      EXT(main)
     /* main should never return, panic if it does */
     adr     x0, Lstartup_returned
-    b       panic_simple
+    b       EXT(panic_simple)
 
 _secondary_core_prepare:
 1:

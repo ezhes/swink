@@ -21,6 +21,8 @@
     movk        \reg, :abs_g0_nc:\val
 .endmacro
 
+/** Some compiler targets place an underscore before symbols but ours does not*/
+#define EXT(label)  label
 
 #define DAIF_DEBUG          (1 << 3)
 #define DAIF_ASYNC          (1 << 2)

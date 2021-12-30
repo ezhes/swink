@@ -23,6 +23,9 @@
  *
  */
 
+#ifndef GPIO_H
+#define GPIO_H
+
 #if PLATFORM_RPI3
 #define MMIO_BASE       0x3F000000
 
@@ -59,6 +62,14 @@
 #define AUX_MU_STAT     ((volatile unsigned int*)(MMIO_BASE+0x00215064))
 #define AUX_MU_BAUD     ((volatile unsigned int*)(MMIO_BASE+0x00215068))
 
+/* Power Management Controller */
+#define PM_RSTC         ((volatile unsigned int*)(MMIO_BASE+0x0010001c))
+#define PM_RSTS         ((volatile unsigned int*)(MMIO_BASE+0x00100020))
+#define PM_WDOG         ((volatile unsigned int*)(MMIO_BASE+0x00100024))
+#define PM_WDOG_MAGIC   0x5a000000
+#define PM_RSTC_FULLRST 0x00000020
+
 #else 
 #error Unsupported platform
 #endif /* PLATFORM_RPI3 */
+#endif /* GPIO_H */

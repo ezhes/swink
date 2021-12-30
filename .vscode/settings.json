@@ -5,7 +5,9 @@
         "stdbool.h": "c",
         "stddef.h": "c",
         "console.h": "c",
-        "routines.h": "c"
+        "routines.h": "c",
+        "cstdio": "c",
+        "types.h": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

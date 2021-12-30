@@ -2,6 +2,11 @@
 #include "console.h"
 #include "machine/io/mini_uart/mini_uart.h"
 
+void 
+console_init(void) {
+    mini_uart_init();
+}
+
 void
 console_write_str(const char *str) {
     if (mini_uart_is_initiliazed()) {
@@ -18,6 +23,10 @@ vprintf_helper(char c, void* char_count_ptr) {
 
 int
 console_vprintf(const char *format, va_list args) {
+    if (!mini_uart_is_initiliazed()) {
+        return -1;
+    }
+    
     int char_cnt = 0;
     __vprintf(format, args, vprintf_helper, &char_cnt);
     return char_cnt;

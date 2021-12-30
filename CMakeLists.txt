@@ -32,8 +32,8 @@ project (kernel C ASM)
 add_executable(kernel
     kernel/core/start.S
     kernel/core/start.c
-    kernel/core/exception.S
-    kernel/core/exception.c
+    kernel/core/exception/exception.S
+    kernel/core/exception/exception.c
 
     kernel/lib/string.c
     kernel/lib/debug.c
@@ -41,6 +41,7 @@ add_executable(kernel
     
     kernel/machine/io/mini_uart/mini_uart.c
     kernel/machine/io/console/console.c
+    kernel/machine/io/pmc/pmc.c
 
     kernel/machine/routines/routines.S
 )

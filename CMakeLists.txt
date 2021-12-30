@@ -30,8 +30,8 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static")
 
 project (kernel C ASM)
 add_executable(kernel
-    kernel/core/start.S
-    kernel/core/start.c
+    kernel/core/start/start.S
+    kernel/core/start/start.c
     kernel/core/exception/exception.S
     kernel/core/exception/exception.c
 

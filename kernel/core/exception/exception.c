@@ -95,7 +95,7 @@ get_exception_class_str(uint64_t esr) {
     return exception_class_to_str[ec];
 }
 
-static bool
+UNUSED static bool 
 cpsr_is_el0(uint64_t cpsr) {
     return SPSR_EXECUTION_LEVEL(cpsr) == 0b0000 /* EL0t */;
 }
@@ -164,7 +164,6 @@ void exception_irq(arm64_context_t context) {
 void exception_fiq(arm64_context_t context) {
     dump_state(context);
     panic("Unhandled exception (FIQ)");
-
 }
 
 void exception_error(arm64_context_t context) {

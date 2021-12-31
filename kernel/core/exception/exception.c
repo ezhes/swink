@@ -50,7 +50,7 @@ enum exception_class {
 };
 
 static const char *
-get_exception_class_str(uint64_t esr) {
+get_exception_class_str(uint32_t esr) {
     static const char *exception_class_to_str[] = {
         ENUM_TO_STR_TABLE(EXCEPTION_CLASS_UNKNOWN),
         ENUM_TO_STR_TABLE(EXCEPTION_CLASS_TRAP_WF),
@@ -96,7 +96,7 @@ get_exception_class_str(uint64_t esr) {
 }
 
 UNUSED static bool 
-cpsr_is_el0(uint64_t cpsr) {
+cpsr_is_el0(uint32_t cpsr) {
     return SPSR_EXECUTION_LEVEL(cpsr) == 0b0000 /* EL0t */;
 }
 
@@ -119,9 +119,9 @@ dump_state(arm64_context_t context) {
     printf(
         "************REGISTER DUMP************\n"
         "context = %p\n"
-        "ESR     = 0x%016llx (%s)\n"
+        "ESR     = 0x%016x (%s)\n"
         "FAR     = 0x%016llx\n"
-        "CPSR    = 0x%016llx (%s)\n",
+        "CPSR    = 0x%016x (%s)\n",
         context,
         context->esr, get_exception_class_str(context->esr),
         context->far,
@@ -153,6 +153,11 @@ dump_state(arm64_context_t context) {
 
 void exception_sync(arm64_context_t context) {
     dump_state(context);
+    if (ESR_EC(context->esr) == EXCEPTION_CLASS_BRK_64) {
+        printf("stepping over breakpoint...\n");
+        context->pc += 4;
+        return;
+    }
     panic("Unhandled exception (synchronous)");
 }
 

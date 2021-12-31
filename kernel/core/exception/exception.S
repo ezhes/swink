@@ -41,9 +41,9 @@
     stp     q30, q31, [sp, #ARM64_NEON_Q_30]
 
     mrs     x0, esr_el1
-    str     x0, [sp, #ARM64_ESR]
+    str     w0, [sp, #ARM64_ESR]
     mrs     x2, spsr_el1
-    str     x2, [sp, #ARM64_CPSR]
+    str     w2, [sp, #ARM64_CPSR]
     mrs     x3, far_el1
     str     x3, [sp, #ARM64_FAR]
     mrs     x4, elr_el1
@@ -99,7 +99,7 @@
     msr     fpsr, x0
     msr     fpsr, x1
 
-    ldr     x0, [sp, #ARM64_CPSR]
+    ldr     w0, [sp, #ARM64_CPSR]
     ldr     x1, [sp, #ARM64_PC]
     msr     spsr_el1, x0
     msr     elr_el1, x1

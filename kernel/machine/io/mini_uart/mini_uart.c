@@ -44,7 +44,7 @@ mini_uart_init(void) {
     register unsigned int r;
 
     /* initialize UART */
-    *AUX_ENABLE |=1;       // enable UART1, AUX mini uart
+    *AUX_MU_ENABLE |=1;       // enable UART1, AUX mini uart
     *AUX_MU_CNTL = 0;
     *AUX_MU_LCR = 3;       // 8 bits
     *AUX_MU_MCR = 0;
@@ -71,6 +71,10 @@ mini_uart_send_char(char c) {
     while(!(*AUX_MU_LSR&0x20)) {}
     /* write the character to the buffer */
     *AUX_MU_IO=c;
+    __builtin_arm_dsb(0xf);
+    if (c == '\n') {
+        mini_uart_send_char('\r');
+    }
 }
 
 void

@@ -17,16 +17,17 @@ set(CMAKE_ASM_COMPILER clang)
 set(CMAKE_ASM_COMPILER_TARGET ${CLANG_TARGET_TRIPLE})
 
 set( CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY )
-add_link_options("LINKER:-nostdlib,-m,${LINKER_TARGET}")
+add_link_options("LINKER:-nostdlib,-m,${LINKER_TARGET},-flto")
 
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdlib")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffreestanding")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
 
 project (kernel C ASM)
 add_executable(kernel
@@ -42,6 +43,10 @@ add_executable(kernel
     kernel/machine/io/mini_uart/mini_uart.c
     kernel/machine/io/console/console.c
     kernel/machine/io/pmc/pmc.c
+    kernel/machine/io/vc/vc_mailbox.c
+    kernel/machine/io/vc/vc_functions.c
+
+    kernel/machine/pmap/pmap.c
 
     kernel/machine/routines/routines.S
 )
@@ -51,6 +56,6 @@ target_include_directories(kernel PRIVATE "${CMAKE_SOURCE_DIR}/kernel")
 
 add_custom_command(
     TARGET kernel POST_BUILD
-    COMMAND llvm-objcopy -O binary ./kernel ./kernel.img
+    COMMAND llvm-objcopy -O binary ./kernel ./kernel8.img
     WORKING_DIRECTORY ${CMAKE_BINARY_DIR}
     COMMENT "Building kernel image..." )

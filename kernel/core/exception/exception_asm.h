@@ -21,7 +21,7 @@
 #define FIQ_EL0_32              14 
 #define ERROR_EL0_32            15
 
-#define ARM64_CONTEXT_SIZE ((33 + 64 + 3) * 8 + (2) * 4)
+#define ARM64_CONTEXT_SIZE ((32 + 64 + 2) * 8 + (2 + 2) * 4)
 
 #define ARM64_GP_0  (8 * 0)
 #define ARM64_GP_2  (8 * 2)
@@ -63,9 +63,9 @@
 #define ARM64_NEON_FPCR  (ARM64_NEON_Q_END + 4 * 1)
 #define ARM64_NEON_END (ARM64_NEON_FPCR + 4)
 
-#define ARM64_ESR  (ARM64_NEON_END + 8 * 0)
+#define ARM64_ESR  (ARM64_NEON_END + 4 * 0)
+#define ARM64_CPSR (ARM64_NEON_END + 4 * 1)
 #define ARM64_FAR  (ARM64_NEON_END + 8 * 1)
-#define ARM64_CPSR (ARM64_NEON_END + 8 * 2)
-#define ARM64_PC   (ARM64_NEON_END + 8 * 3)
+#define ARM64_PC   (ARM64_NEON_END + 8 * 2)
 
 #endif /* EXCEPTION_ASM_H */

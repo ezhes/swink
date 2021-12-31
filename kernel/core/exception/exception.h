@@ -19,9 +19,9 @@ struct arm64_context {
     	uint32_t fpcr;
     } neon;
 
-    uint64_t esr;
+    uint32_t esr;
+    uint32_t cpsr;
     uint64_t far;
-    uint64_t cpsr;
     uint64_t pc;
 };
 
@@ -31,5 +31,6 @@ typedef struct arm64_context * arm64_context_t;
 STATIC_ASSERT(ARM64_CONTEXT_SIZE == sizeof(struct arm64_context));
 STATIC_ASSERT(ARM64_GP_END == sizeof(struct gp));
 STATIC_ASSERT(ARM64_NEON_END == sizeof(struct gp) + sizeof(struct neon));
-STATIC_ASSERT(ARM64_CPSR == ARM64_NEON_END + sizeof(uint64_t) * 2);
+STATIC_ASSERT(ARM64_PC == ARM64_NEON_END + sizeof(uint32_t) * 2 +sizeof(uint64_t) * 1);
+STATIC_ASSERT(sizeof(struct arm64_context) % 16 == 0); /* stack align */
 #endif /* EXCEPTION_H */

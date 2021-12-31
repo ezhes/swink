@@ -24,5 +24,7 @@ I have tested and developed drivers for Swink on the following platforms:
 
 #### Raspberry Pi 3/Zero 2W (BCM2837)
 ##### Supported drivers
-* Mini UART
 * Power management 
+* Mini UART
+* VideoCore cross-core RPC
+

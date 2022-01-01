@@ -12,7 +12,7 @@ SECTIONS
         *(COMMON)
         __bss_end = .;
     }
-    _end = .;
+
     .primary_cpu_boot_stacks :
     {
         . = ALIGN(16);
@@ -22,6 +22,7 @@ SECTIONS
         __primary_cpu_exception_stack  = .;
     }
 
+    _end = .;
+    
    /DISCARD/ : { *(.comment) *(.gnu*) *(.note*) *(.eh_frame*) }
 }
-__bss_size = (__bss_end - __bss_start)>>3;

@@ -1,7 +1,7 @@
 #ifndef LIB_ASM_UTILS
 #define LIB_ASM_UTILS
 
- .macro ADDRL reg, label
+ .macro ADRL reg, label
     adrp        \reg, \label
     add         \reg, \reg, :lo12:\label
  .endmacro

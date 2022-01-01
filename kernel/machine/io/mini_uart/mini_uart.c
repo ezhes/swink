@@ -71,7 +71,6 @@ mini_uart_send_char(char c) {
     while(!(*AUX_MU_LSR&0x20)) {}
     /* write the character to the buffer */
     *AUX_MU_IO=c;
-    __builtin_arm_dsb(0xf);
     if (c == '\n') {
         mini_uart_send_char('\r');
     }

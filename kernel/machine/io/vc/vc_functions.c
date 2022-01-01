@@ -173,4 +173,23 @@ bool vc_functions_get_vc_revision(uint32_t *revision) {
     return get_tag_32(VC_TAG_GET_FIRMWARE_REVISION, revision);
 }
 
+bool vc_functions_set_activity_led(bool enabled) {
+    struct vc_mailbox_message message;
+    struct vc_message_tag *tag = NULL;
 
+    message_init(&message);
+
+    if (!(tag = message_add_tag(&message, 
+                                VC_TAG_SET_LED_STATUS, 
+                                /* slots */ 2))) {
+        return false;
+    }
+    tag->buffer[0] = 130 /* status LED */;
+    tag->buffer[1] = enabled;
+
+    if (!vc_mailbox_call_sync(MAILBOX_CHANNEL_AP_TO_VC, &message)) {
+        return false;
+    }
+
+    return true;
+}

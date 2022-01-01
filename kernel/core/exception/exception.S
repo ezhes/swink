@@ -123,12 +123,12 @@
     */
     .align	7
     Lel1_sp0_vector_\target:
-    msr     SPSel, #1                   // switch to exception stack
+    msr     SPSel, #0                   // switch back to SP0
     sub     sp, sp, #ARM64_CONTEXT_SIZE
     stp     x0, x1, [sp, #ARM64_GP_0]   // spill a bit so we can get SP_EL0
-    mrs     x0, SP_EL0
+    add     x0, sp, #ARM64_CONTEXT_SIZE // recover sp
     str     x0, [sp, #ARM64_GP_SP]
-    adr     x1, \target                 // setup handler target
+    ADRL    x1, \target                 // setup handler target
     b fleh_dispatch
 .endmacro
 
@@ -138,7 +138,7 @@
     SP1 might hold an invalid stack
     Returns with context at sp
 
-    TODO: Before adding lifeguard, check that SP0 is valid before spilling
+    TODO: Before adding lifeguard, check that SP1 is valid before spilling
     */
     .align	7
     Lel1_sp1_vector_\target:
@@ -146,7 +146,7 @@
     stp     x0, x1, [sp, #ARM64_GP_0]   // spill a bit so we can get SP_ELx
     add     x0, sp, #ARM64_CONTEXT_SIZE // recover sp
     str     x0, [sp, #ARM64_GP_SP]
-    adr     x1, \target                 // setup handler target
+    ADRL    x1, \target                 // setup handler target
     b fleh_dispatch
 .endmacro
 
@@ -155,9 +155,9 @@
     Lel0_sp1_vector_\target:
     sub     sp, sp, #ARM64_CONTEXT_SIZE
     stp     x0, x1, [sp, #ARM64_GP_0]   // spill a bit so we can get SP_ELx
-    add     x0, sp, #ARM64_CONTEXT_SIZE // recover sp
+    mrs     x0, SP_EL0
     str     x0, [sp, #ARM64_GP_SP]
-    adr     x1, \target                 // setup handler target
+    ADRL    x1, \target                 // setup handler target
     b fleh_dispatch
 .endmacro
 
@@ -172,15 +172,15 @@
 .align	12
 .globl exception_vectors_el1 
 exception_vectors_el1:
-    EL1_SP1_VECTOR      EXT(exception_sync)
-    EL1_SP1_VECTOR      EXT(exception_irq)
-    EL1_SP1_VECTOR      EXT(exception_fiq)
-    EL1_SP1_VECTOR      EXT(exception_error)
-
     EL1_SP0_VECTOR      EXT(exception_sync)
     EL1_SP0_VECTOR      EXT(exception_irq)
     EL1_SP0_VECTOR      EXT(exception_fiq)
     EL1_SP0_VECTOR      EXT(exception_error)
+
+    EL1_SP1_VECTOR      EXT(exception_sync)
+    EL1_SP1_VECTOR      EXT(exception_irq)
+    EL1_SP1_VECTOR      EXT(exception_fiq)
+    EL1_SP1_VECTOR      EXT(exception_error)
 
     EL0_64_SP1_VECTOR   EXT(exception_sync)
     EL0_64_SP1_VECTOR   EXT(exception_irq)
@@ -210,7 +210,7 @@ unhandled_exception_32:
     /* We don't support 32-bit user processes, so this should never happen */
     mrs     x2, esr_el1
     mrs     x3, elr_el1
-    adr 	x0, Lunhandled_exception_32_panic_str
+    ADRL	x0, Lunhandled_exception_32_panic_str
     b EXT(panic_formatted)
 
 .section ".rodata"

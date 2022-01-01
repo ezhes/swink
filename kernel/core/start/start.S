@@ -20,7 +20,7 @@ Lstart_in_el3:
     msr     scr_el3, x2
     mov     x2, #0x3c9
     msr     spsr_el3, x2
-    adr     x2, Lstart_in_el2
+    ADRL    x2, Lstart_in_el2
     msr     elr_el3, x2
     eret
 
@@ -32,14 +32,14 @@ Lstart_in_el2:
     msr     cnthctl_el2, x0
     msr     cntvoff_el2, xzr
     /* enable AArch64 in EL1 */
+    mrs     x0, hcr_el2
     mov     x0, #(1 << 31)      // AArch64
     orr     x0, x0, #(1 << 1)   // SWIO hardwired on Pi3
     msr     hcr_el2, x0
-    mrs     x0, hcr_el2
     /* return to EL1 */
     mov     x2, #0x3c4
     msr     spsr_el2, x2
-    adr     x2, Lstart_in_el1
+    ADRL    x2, Lstart_in_el1
     msr     elr_el2, x2
     eret
 
@@ -49,41 +49,37 @@ Lstart_in_el1:
     mov     x0, #(0b11<<20)                /* FPEN_ENABLE */
     msr     cpacr_el1, x0
 
+    mrs     x0, sctlr_el1
+    bic     x0, x0, 0b11111                /* disable A/C/SA/SA0 */
+    msr     sctlr_el1, x0
+
     /* Spin secondary cores */
     mrs     x1, mpidr_el1
     and     x1, x1, #3
     cbnz    x1, _secondary_core_prepare
 
     /* Setup bootstrap interrupts */
-    adr     x1, exception_vectors_el1
+    ADRL    x1, exception_vectors_el1
     msr     vbar_el1, x1
     msr     DAIFClr, #DAIF_ALL           /* enable all exceptions */
 
     /* Setup primary stack in SPSel 0 to the pre-allocated boot stack */
-    adr     x1, __primary_cpu_boot_stack
-    mov     sp, x1
     /* Prepare exception stack */
     msr     SPSel, #1
-    adr     x1, __primary_cpu_exception_stack
+    ADRL    x1, __primary_cpu_exception_stack
     mov     sp, x1
+    /* Prepare initial kernel thread stack */
     msr     SPSel, #0
+    ADRL    x1, __primary_cpu_boot_stack
+    mov     sp, x1
 
-    // clear bss
-    ldr     x1, =__bss_start
-    ldr     w2, =__bss_size
-3:  cbz     w2, 4f
-    str     xzr, [x1], #8
-    sub     w2, w2, #1
-    cbnz    w2, 3b
-
-4:
     b      _primary_core_boot
 
 
 _primary_core_boot:
     bl      EXT(main)
     /* main should never return, panic if it does */
-    adr     x0, Lstartup_returned
+    ADRL    x0, Lstartup_returned
     b       EXT(panic_simple)
 
 _secondary_core_prepare:

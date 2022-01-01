@@ -3,9 +3,14 @@
 #include "machine/routines/routines.h"
 #include "lib/stdio.h"
 #include "machine/io/pmc/pmc.h"
+#include "lib/string.h"
 
+extern uint8_t __bss_start;
+extern uint8_t __bss_end;
 void 
 main(void) {
+    /* zero BSS */
+    memset(&__bss_start, 0x00, &__bss_end - &__bss_start);
     console_init();
 
     printf(
@@ -37,11 +42,8 @@ main(void) {
         videocore_fw
     );
 
-    asm ("brk #1");
-
-
     printf("[*] Shutting down...\n");
     pmc_shutdown();
-    routines_core_idle();
+    // routines_core_idle();
     /* NO RETURN */
 }

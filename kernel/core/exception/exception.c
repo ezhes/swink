@@ -104,11 +104,11 @@ static const char *
 get_execution_level_str(uint64_t cpsr) {
     switch (SPSR_EXECUTION_LEVEL(cpsr)) {
         case 0b0000:
-            return "EL0_SP1";
+            return "EL0_SP0";
         case 0b0100:
-            return "EL1_SP1";
-        case 0b0101:
             return "EL1_SP0";
+        case 0b0101:
+            return "EL1_SP1";
         default:
             return "<unknown>";
     }
@@ -119,13 +119,17 @@ dump_state(arm64_context_t context) {
     printf(
         "************REGISTER DUMP************\n"
         "context = %p\n"
-        "ESR     = 0x%016x (%s)\n"
+        "ESR     = 0x%016x (ISS = %08x, %s)\n"
         "FAR     = 0x%016llx\n"
-        "CPSR    = 0x%016x (%s)\n",
+        "CPSR    = 0x%016x (%s)\n"
+        "TCR_EL1 = 0x%016lx\n"
+        "SCTLR_EL1=0x%016lx\n",
         context,
-        context->esr, get_exception_class_str(context->esr),
+        context->esr, (uint32_t)ESR_ISS(context->esr), 
+            get_exception_class_str(context->esr),
         context->far,
-        context->cpsr, get_execution_level_str(context->cpsr)
+        context->cpsr, get_execution_level_str(context->cpsr),
+        __builtin_arm_rsr64("tcr_el1"), __builtin_arm_rsr64("sctlr_el1")
     );
 
     /* print x0...x28 */
@@ -154,7 +158,7 @@ dump_state(arm64_context_t context) {
 void exception_sync(arm64_context_t context) {
     dump_state(context);
     if (ESR_EC(context->esr) == EXCEPTION_CLASS_BRK_64) {
-        printf("stepping over breakpoint...\n");
+        printf("[debug] stepping over breakpoint...\n");
         context->pc += 4;
         return;
     }

@@ -14,4 +14,7 @@ bool vc_functions_get_board_revision(uint32_t *revision);
 /** Get the VideoCore firmware revision */
 bool vc_functions_get_vc_revision(uint32_t *revision);
 
+/** Enable or disable the on-board activity LED */
+bool vc_functions_set_activity_led(bool enabled);
+
 #endif /* VC_FUNCTIONS_H */

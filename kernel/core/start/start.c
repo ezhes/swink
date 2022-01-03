@@ -42,6 +42,8 @@ main(void) {
         videocore_fw
     );
 
+    asm("brk #0x41");
+
     printf("[*] Shutting down...\n");
     pmc_shutdown();
     // routines_core_idle();

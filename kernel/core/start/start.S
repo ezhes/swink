@@ -1,7 +1,8 @@
- #include "lib/asm_utils.h"
+#include "lib/asm_utils.h"
+#include "machine/pmap/pmap_asm.h"
+#include "machine/platform_registers.h"
 
 .section ".text.boot"
-
 .global _start
 _start:
     /* Get the CPU into EL1 since we do not support hypervisors  */
@@ -49,8 +50,7 @@ Lstart_in_el1:
     mov     x0, #(0b11<<20)                /* FPEN_ENABLE */
     msr     cpacr_el1, x0
 
-    mrs     x0, sctlr_el1
-    bic     x0, x0, 0b11111                /* disable A/C/SA/SA0 */
+    MOVC    x0, SCTLR_EL1_BOOTSTRAP_CONFIG
     msr     sctlr_el1, x0
 
     /* Spin secondary cores */
@@ -63,26 +63,44 @@ Lstart_in_el1:
     msr     vbar_el1, x1
     msr     DAIFClr, #DAIF_ALL           /* enable all exceptions */
 
-    /* Setup primary stack in SPSel 0 to the pre-allocated boot stack */
+    /*
+    XXX: We assume that the kernel was loaded at/above 0x80000 and that all 
+    memory below is safe, physical memory. This gives us ~128 4K pages for
+    bootstrap.
+    Throughout init, we hold the ""allocator"" pointer in x0.
+
+    Allocations:
+    [0x7f000, 0x80000) : Boot CPU exception stack
+    [0x7e000, 0x7f000) : Boot CPU kernel stack
+    [0x7a000, 0x7e000) : VM bootstrap tables (4 cnt.) -- see vm_bootstrap.S
+    */
+
+    /* Setup boot stacks below the code */
     /* Prepare exception stack */
     msr     SPSel, #1
-    ADRL    x1, __primary_cpu_exception_stack
-    mov     sp, x1
+    ADRL    x0, _start
+    mov     sp, x0
+    sub     x0, x0, PAGE_SIZE
+
     /* Prepare initial kernel thread stack */
     msr     SPSel, #0
-    ADRL    x1, __primary_cpu_boot_stack
-    mov     sp, x1
+    mov     sp, x0
+    sub     x0, x0, 2 * PAGE_SIZE           /* x0 now points to a free page */
 
     b      _primary_core_boot
 
 
 _primary_core_boot:
+    /* Setup bootstrap tables */
+    bl      EXT(vm_bootstrap)
+    /* Launch ourselves into C */
     bl      EXT(main)
     /* main should never return, panic if it does */
     ADRL    x0, Lstartup_returned
     b       EXT(panic_simple)
 
 _secondary_core_prepare:
+//TODO: Multi-core
 1:
     wfe
     b 1b

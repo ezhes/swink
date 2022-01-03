@@ -119,7 +119,7 @@ dump_state(arm64_context_t context) {
     printf(
         "************REGISTER DUMP************\n"
         "context = %p\n"
-        "ESR     = 0x%016x (ISS = %08x, %s)\n"
+        "ESR     = 0x%016x (ISS = 0x%08x, %s)\n"
         "FAR     = 0x%016llx\n"
         "CPSR    = 0x%016x (%s)\n"
         "TCR_EL1 = 0x%016lx\n"

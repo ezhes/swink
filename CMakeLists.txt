@@ -20,7 +20,6 @@ set( CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY )
 add_link_options("LINKER:-nostdlib,-m,${LINKER_TARGET},-flto")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mgeneral-regs-only")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
@@ -34,6 +33,7 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-unaligned-access")
 project (kernel C ASM)
 add_executable(kernel
     kernel/core/start/start.S
+    kernel/core/start/vm_bootstrap.S
     kernel/core/start/start.c
     kernel/core/exception/exception.S
     kernel/core/exception/exception.c

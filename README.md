@@ -15,6 +15,8 @@ Although I always strive for production quality code, this is chiefly a hobby/re
 - [ ] User processes
 - [ ] Fast user space context switching through [Lifeguard](/docs/watchpoints/lifeguard.md)
 - [ ] Multi-core support
+- [ ] Kernel control-flow integrity through [Shadow](/docs/watchpoints/shadow.md)
+- [ ] Fast kernel enclaves through [Shadow](/docs/watchpoints/shadow.md)
 
 ### Hardware support
 Due to the diversity of ARM CPUs and the load-bearing uses of certain architectural features, Swink *requires* a CPU which supports ARMv8A (or newer).

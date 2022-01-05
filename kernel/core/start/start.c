@@ -4,11 +4,27 @@
 #include "lib/stdio.h"
 #include "machine/io/pmc/pmc.h"
 #include "lib/string.h"
+#include "machine/pmap/pmap.h"
+#include "machine/platform_registers.h"
 
 extern uint8_t __bss_start;
 extern uint8_t __bss_end;
+/**
+ * @brief The first C function invoked on boot. Executed once by the primary CPU
+ * Virtual memory is active with both a P=V map and a KVA map. VM, however, is 
+ * in "bootstrap" mode where everything is RWX (which will be solved later in 
+ * boot).
+ * 
+ * The CPU is configured with both an application and exception stack which live
+ * in the physical bootstrap region.
+ * 
+ * @param bootstrap_pa_reserved The maximum physical address which is reserved
+ * until the kernel has migrated off of bootstrap. [0, reserved) contains the
+ * bootstrap page tables and the bootstrap stacks. Once the kernel ends its
+ * bootstrap phase, this memory may be reclaimed.
+ */
 void 
-main(void) {
+main(uintptr_t bootstrap_pa_reserved) {
     /* zero BSS */
     memset(&__bss_start, 0x00, &__bss_end - &__bss_start);
     console_init();
@@ -42,7 +58,7 @@ main(void) {
         videocore_fw
     );
 
-    asm("brk #0x41");
+    printf("main address = %p, reserved %llx\n", &main, bootstrap_pa_reserved);
 
     printf("[*] Shutting down...\n");
     pmc_shutdown();

@@ -46,22 +46,14 @@ Lstart_in_el2:
 
     
 Lstart_in_el1:
-    /* Enable NEON */
-    mov     x0, #(0b11<<20)                /* FPEN_ENABLE */
-    msr     cpacr_el1, x0
-
-    MOVC    x0, SCTLR_EL1_BOOTSTRAP_CONFIG
-    msr     sctlr_el1, x0
-
     /* Spin secondary cores */
     mrs     x1, mpidr_el1
     and     x1, x1, #3
     cbnz    x1, _secondary_core_prepare
 
-    /* Setup bootstrap interrupts */
-    ADRL    x1, exception_vectors_el1
-    msr     vbar_el1, x1
-    msr     DAIFClr, #DAIF_ALL           /* enable all exceptions */
+    /* Enable NEON */
+    MOVC     x0, CPACR_EL1_CONFIG
+    msr     cpacr_el1, x0
 
     /*
     XXX: We assume that the kernel was loaded at/above 0x80000 and that all 
@@ -75,7 +67,8 @@ Lstart_in_el1:
     [0x7a000, 0x7e000) : VM bootstrap tables (4 cnt.) -- see vm_bootstrap.S
     */
 
-    /* Setup boot stacks below the code */
+    /* Setup bootstrap data below the code */
+    adr     x19, _start                     /* stash the bootstrap region's address */
     /* Prepare exception stack */
     msr     SPSel, #1
     ADRL    x0, _start
@@ -87,13 +80,20 @@ Lstart_in_el1:
     mov     sp, x0
     sub     x0, x0, 2 * PAGE_SIZE           /* x0 now points to a free page */
 
+    /* Setup bootstrap tables -- returns us back into KVA space */
+    bl      EXT(vm_bootstrap)
+
+    /* Setup bootstrap interrupts */
+    ADRL    x1, exception_vectors_el1
+    msr     vbar_el1, x1
+    msr     DAIFClr, #DAIF_ALL              /* enable all exceptions */
+
     b      _primary_core_boot
 
 
 _primary_core_boot:
-    /* Setup bootstrap tables */
-    bl      EXT(vm_bootstrap)
     /* Launch ourselves into C */
+    mov     x0, x19                         /* pass bootstrap reservation */
     bl      EXT(main)
     /* main should never return, panic if it does */
     ADRL    x0, Lstartup_returned

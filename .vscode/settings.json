@@ -7,7 +7,9 @@
         "console.h": "c",
         "routines.h": "c",
         "cstdio": "c",
-        "types.h": "c"
+        "types.h": "c",
+        "vm.h": "c",
+        "pmap_asm.h": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

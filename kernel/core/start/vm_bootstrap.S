@@ -14,6 +14,11 @@
 1:
 .endmacro
 
+.macro MAP_RANGE table_ptr table_ptr_i range_start_label range_stop_label template scratch
+
+    cmp     \table_ptr_i, PAGE_ENTRY_COUNT
+.endmacro
+
 /*
 L3 = 512 * 1<<12 = 2MB
 L2 = 512 * 512 * 1<<12 = 1GB
@@ -72,18 +77,80 @@ EXT(vm_bootstrap):
     add     x3, x2, x4
     stp     x2, x3, [x1, #16]
     /* Load P=V into TTBR0 but don't activate it yet */
-    orr     x1, x1, #1 /* CNP */
+    orr     x1, x1, TTBR_CNP
     msr     TTBR0_EL1, x1
 
-    /* Zero the KVA L1=x1, L2=x2, and L3=x3 tables */
+    /* 
+    Construct the KVA bootstrap table
+    x1 = L1 table
+    x2 = L2 table
+    x3 = L3 table
+    x4 = kernel table entry template
+    x5 = scratch
+    */
     mov     x1, x0
     sub     x2, x1, PAGE_SIZE
     sub     x3, x2, PAGE_SIZE
     sub     x0, x0, PAGE_SIZE * 3
-    ZERO_PAGE x3, x4, PAGE_SIZE * 3         /* zero FROM x3 since it's lower */
+    ZERO_PAGE x3, x5, PAGE_SIZE * 3         /* zero FROM x3 since it's lower */
+    /* Setup L1->L2 link in first slot */
+    MOVC    x4, PTE_TEMPLATE_TABLE_KERN_ONLY
+    /* Since the PA is aligned, the encoding works such that we can add the oPA*/
+    orr     x5, x4, x2
+    str     x5, [x1]
+    /* Setup the L2->L3 link the first slot -- L3 starts at 0xffffff8000000000 */
+    orr     x5, x4, x3
+    str     x5, [x2]
+    /* 
+    Now map the kernel into the L3 table
+    For simplicity, we map as RWX and later lockdown to finer permissions on
+    vm_finalize 
+    x1 = L1 table
+    x2 = L3 table entry write remaining
+    x3 = L3 table
+    x4 = kernel bootstrap PTE template
+    x5 = Physical address map iterator (incremented by pages)
+    x6 = L3 table iterator
+    x7 = scratch
+    */
+    /* we use adrp instead of ADRL since these are always page aligned */
+    adrp    x5, __kernel_map_start
+    adrp    x2, __kernel_map_end
+    /* number of entries required */
+    sub     x2, x2, x5
+    lsr     x2, x2, PAGE_SHIFT              /* no rounding issues, page aligned */
+    MOVC    x4, PTE_TEMPLATE_PAGE_NORMAL_KERN_BOOTSTRAP
+    mov     x6, x3
 
+    /* check that we have enough space to map the kernel */
+    cmp     x2, #PAGE_ENTRY_COUNT
+    b.lo    0f
+    /* Kernel is too large for one L3 page, need to update code */
+    ADRL    x0, Lmap_failed_too_large_str
+    b       EXT(panic_simple)
+    0:
+
+Lvm_bootstrap_map_loop_again:
+    /* have we mapped all entries? */
+    cbz     x2, Lvm_bootstrap_map_loop_done
+    /* map new entry, create entry in x7 = template | phys_addr_i */
+    orr     x7, x4, x5
+    /* store to l3 iterator i and iterator ptr */
+    str     x7, [x6], #8
+
+    add     x5, x5, #PAGE_SIZE              /* phys_addr_i += PAGE_SIZE */
+    sub     x2, x2, #1                      /* l3_write_remainig-- */
+    b       Lvm_bootstrap_map_loop_again
+
+Lvm_bootstrap_map_loop_done:
+    /* Load the KVA table into TTBR1 but don't activate it */
+    orr     x1, x1, TTBR_CNP
     msr     TTBR1_EL1, x1
     
+    /* Configure SCTLR for bootstrap before going into the shared vm_init */
+    MOVC    x0, SCTLR_EL1_BOOTSTRAP_CONFIG
+    msr     sctlr_el1, x0
+
     /* attempt to init the VM */
     b vm_init
 
@@ -91,11 +158,24 @@ EXT(vm_bootstrap):
 
 /**
 Initializes the MMU with constant configuration and enables it
+Returns position independent slide in x0
 Assumes:
 1. TTBR0/1 are already loaded
-2. LR is a valid address after the MMU is enabled (either on KVA or P=V) space
+2. LR is a valid address physical address
+3. SCTLR is alredy configured and valid
 */
 vm_init:
+    /* 
+    Calculate the physical->VM slide
+    slide = new_base - phys_base
+    Assumes new_base > phys_base (which is always true given a higher-half kernel)
+     */
+    MOVC    x0, VM_KERNEL_BASE_ADDRESS
+    adr     x1, _start
+    sub     x0, x0, x1
+    /* Relocate return address */
+    add     lr, lr, x0
+    /* Prepare to enable VM */
     MOVC    x1, TCR_EL1_CONFIG
     msr     tcr_el1, x1
     MOVC    x1, MAIR_EL1_CONFIG
@@ -109,4 +189,11 @@ vm_init:
     orr     x0, x0, SCTLR_M
     msr     sctlr_el1, x0
     isb
+
+    /* Return to LR in KVA map */
     ret
+
+
+.section ".rodata"
+Lmap_failed_too_large_str:
+.string "Kernel too large (>2MB) for single 4K L3 table"

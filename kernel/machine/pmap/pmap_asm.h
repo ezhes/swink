@@ -38,9 +38,9 @@
 #define MAIR_BLOCK_SHIFT        (2)
 #define MAIR_BLOCK_MASK         (0b111ULL << MAIR_BLOCK_SHIFT)
 
-#define OUTPUT_ADDRESS_SHIFT    (PAGE_SHIFT)
-#define OUTPUT_ADDRESS_MASK     (((1ULL << (47 - OUTPUT_ADDRESS_SHIFT)) - 1) << OUTPUT_ADDRESS_SHIFT)
-#define OUTPUT_ADDRESS_TO_PTE(oa) ((oa & OUTPUT_ADDRESS_MASK) << OUTPUT_ADDRESS_SHIFT)
+#define OUTPUT_ADDRESS_SHIFT    (0)
+#define OUTPUT_ADDRESS_MASK     (((1ULL << (47 - PAGE_SHIFT)) - 1) << PAGE_SHIFT)
+#define OUTPUT_ADDRESS_TO_PTE(oa) (((oa) & OUTPUT_ADDRESS_MASK))
 
 /* APTable constants */
 #define AP_KERN_RW_USER_NA      (0b00ULL)
@@ -97,32 +97,52 @@ These indexes are defined arbitrarily and configured in platform_registers.h
     | ACCESS_FLAG_BLOCK \
 )
 
-/** Template for regular kernel RW memory */
-#define PTE_TEMPLATE_PAGE_NORMAL_KERN_RW     ( \
-    PTE_VALID_TABLE | UXN_BLOCK | PXN_BLOCK | SH_TO_PTE(SH_OUTER_SHAREABLE) \
-    | AP_BLOCK_TO_PTE(AP_KERN_RW_USER_NA) | MAIR_IDX_TO_PTE(MAIR_IDX_NORMAL) \
-    | ACCESS_FLAG_BLOCK \
+/** Template for device kernel memory */
+#define PTE_TEMPLATE_PAGE_DEVICE_KERN_BASE   (\
+    PTE_VALID_TABLE | UXN_TABLE | PXN_TABLE | SH_TO_PTE(SH_NON_SHAREABLE) \
+    | MAIR_IDX_TO_PTE(MAIR_IDX_DEVICE) | ACCESS_FLAG_BLOCK \
 )
 
-/** Template for regular kernel RO memory */
-#define PTE_TEMPLATE_PAGE_NORMAL_KERN_RO     ( \
-    PTE_VALID_TABLE | UXN_BLOCK | PXN_BLOCK | SH_TO_PTE(SH_OUTER_SHAREABLE) \
-    | AP_BLOCK_TO_PTE(AP_KERN_RO_USER_NA) | MAIR_IDX_TO_PTE(MAIR_IDX_NORMAL) \
-    | ACCESS_FLAG_BLOCK \
+/** Template for device kernel RW memory */
+#define PTE_TEMPLATE_PAGE_DEVICE_KERN_RW     (\
+    PTE_TEMPLATE_PAGE_DEVICE_KERN_BASE \
+    | AP_BLOCK_TO_PTE(AP_KERN_RW_USER_NA) \
+)
+
+/** Template for device kernel RO memory */
+#define PTE_TEMPLATE_PAGE_DEVICE_KERN_RO     (\
+    PTE_TEMPLATE_PAGE_DEVICE_KERN_BASE \
+    | AP_BLOCK_TO_PTE(AP_KERN_RO_USER_NA) \
+)
+
+
+/** Template for regular kernel memory */
+#define PTE_TEMPLATE_PAGE_NORMAL_KERN_BASE   ( \
+    PTE_VALID_TABLE | UXN_TABLE | SH_TO_PTE(SH_OUTER_SHAREABLE) \
+    | MAIR_IDX_TO_PTE(MAIR_IDX_NORMAL) | ACCESS_FLAG_BLOCK \
 )
 
 /** Template for regular kernel RX memory */
 #define PTE_TEMPLATE_PAGE_NORMAL_KERN_RX     ( \
-    PTE_VALID_TABLE | UXN_BLOCK | SH_TO_PTE(SH_OUTER_SHAREABLE) \
-    | AP_BLOCK_TO_PTE(AP_KERN_RO_USER_NA) | MAIR_IDX_TO_PTE(MAIR_IDX_NORMAL) \
-    | ACCESS_FLAG_BLOCK \
+    PTE_TEMPLATE_PAGE_NORMAL_KERN_BASE \
+    | AP_BLOCK_TO_PTE(AP_KERN_RO_USER_NA) \
+)
+
+#define PTE_TEMPLATE_PAGE_NORMAL_KERN_RW     ( \
+    PTE_TEMPLATE_PAGE_NORMAL_KERN_BASE \
+    | AP_BLOCK_TO_PTE(AP_KERN_RW_USER_NA) | PXN_TABLE \
+)
+
+/** Template for regular kernel RO memory */
+#define PTE_TEMPLATE_PAGE_NORMAL_KERN_RO     ( \
+    PTE_TEMPLATE_PAGE_NORMAL_KERN_BASE \
+    | AP_BLOCK_TO_PTE(AP_KERN_RO_USER_NA) | PXN_TABLE \
 )
 
 /** Template for kernel rwx normal memory (useful for bootstrap only) */
 #define PTE_TEMPLATE_PAGE_NORMAL_KERN_BOOTSTRAP     ( \
-    PTE_VALID_TABLE | UXN_BLOCK | SH_TO_PTE(SH_OUTER_SHAREABLE) \
-    | AP_BLOCK_TO_PTE(AP_KERN_RW_USER_NA) | MAIR_IDX_TO_PTE(MAIR_IDX_NORMAL) \
-    | ACCESS_FLAG_BLOCK \
+    PTE_TEMPLATE_PAGE_NORMAL_KERN_BASE \
+    | AP_BLOCK_TO_PTE(AP_KERN_RW_USER_NA) \
 )
 
 /** 
@@ -131,7 +151,7 @@ These indexes are defined arbitrarily and configured in platform_registers.h
  */
 #define PTE_TEMPLATE_TABLE_KERN_ONLY            ( \
     PTE_VALID_TABLE | UXN_TABLE | AP_TABLE_TO_PTE(AP_KERN_RW_USER_NA) \
-    | ACCESS_FLAG_BLOCK\
+    | ACCESS_FLAG_BLOCK \
 )
 
 /** 
@@ -140,6 +160,7 @@ These indexes are defined arbitrarily and configured in platform_registers.h
  */
 #define PTE_TEMPLATE_TABLE_USER                 ( \
     PTE_VALID_TABLE | PXN_TABLE | AP_TABLE_TO_PTE(AP_KERN_RW_USER_RW) \
+    | ACCESS_FLAG_BLOCK \
 )
 
 #endif /* PMAP_ASM_H */

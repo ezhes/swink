@@ -68,6 +68,7 @@ Lstart_in_el1:
 
     /* Setup bootstrap data below the code */
     ADRL    x19, __kernel_map_end            /* stash the bootstrap PA region max (always page aligned) */
+    ADRL    x20, __kernel_map_start          /* stash the start PA for pmap_init.c to load the kernel */
     mov     x0, x19
     /* Prepare exception stack */
     msr     SPSel, #1
@@ -92,7 +93,8 @@ Lstart_in_el1:
 
 _primary_core_boot:
     /* Launch ourselves into C */
-    add     x0, x19, #0x06000               /* Reserve static bootstrap region */
+    mov     x0, x20                         /* __kernel_map_start PA */
+    add     x1, x19, #0x06000               /* Reserve static bootstrap region */
     bl      EXT(main)
     /* main should never return, panic if it does */
     ADRL    x0, Lstartup_returned

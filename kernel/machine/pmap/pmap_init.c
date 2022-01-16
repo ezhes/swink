@@ -12,6 +12,13 @@
 #include "lib/ctype.h"
 #include "lib/string.h"
 
+/*
+pmap_init.c // January 15, 2022
+These routines are responsible for performing VM bootstrap phase 2. This entails
+creating the final kernel pmap, initializing the kernel physical memory manager,
+and activating the new kernel map.
+*/
+
 /**
  * Converts a virtual address to its component translation parts.
  * The page table indices are placed in lx_i and the TTBRn value is returned
@@ -95,6 +102,12 @@ static void vm_init_map_contiguous(pmap_t pmap, uint64_t *allocation_ptr,
                             uint64_t pte_template, 
                             vm_addr_t vm_base, phys_addr_t phys_base,
                             size_t page_count) {
+    printf(
+        "[*] vm_init_map_contiguous vm_base = 0x%llx, " 
+        "phys_base = 0x%llx, page_count = %zu\n", 
+        vm_base, phys_base, page_count
+    );
+
     phys_addr_t l1, l2, l3;
     unsigned int l1_i, l2_i, l3_i;
     l2 = l3 = PHYS_ADDR_INVALID;
@@ -152,14 +165,20 @@ extern char __kernel_ro_data_end;
 extern char __kernel_rw_data_start;
 extern char __kernel_rw_data_end;
 
-#define KERNEL_SECTION_PA_BASE(s)   \
+/** Switch the kernel from the bootstrap tables onto the pmap_kernel pmap */
+extern void vm_bootstrap_switch_to_pmap_kernel(phys_addr_t page_table_base);
+
+#define KERNEL_SECTION_PA_BASE_OFFSET(s)   \
     ((phys_addr_t)(&(s ## _start) - &__kernel_map_start))
+#define KERNEL_SECTION_PA_BASE(s)   \
+    (kernel_base + KERNEL_SECTION_PA_BASE_OFFSET(s))
 #define KERNEL_SECTION_VA_BASE(s)   \
-    ((vm_addr_t)(VM_KERNEL_BASE_ADDRESS + KERNEL_SECTION_PA_BASE(s)))
+    ((vm_addr_t)(VM_KERNEL_BASE_ADDRESS + KERNEL_SECTION_PA_BASE_OFFSET(s)))
 #define KERNEL_SECTION_PAGE_COUNT(s)    \
     ((&(s ## _end) - &(s ## _start)) >> PAGE_SHIFT)
 
-void pmap_vm_init(phys_addr_t ram_base, phys_addr_t ram_size,
+void pmap_vm_init(phys_addr_t kernel_base,
+                  phys_addr_t ram_base, phys_addr_t ram_size,
                   phys_addr_t bootstrap_pa_reserved) {
     phys_addr_t allocation_ptr = bootstrap_pa_reserved;
     
@@ -193,12 +212,13 @@ void pmap_vm_init(phys_addr_t ram_base, phys_addr_t ram_size,
     );
 
 
-    /* Init the fine grained kernel physmap */
     /* 
+    Init the fine grained kernel physmap
+
     We want the physmap to be L1 aligned so that it never intermixes with other
     kernel memory (helpful for applying policy decisions, etc.)
     */
-   size_t physmap_size = MAX(ram_size, MMIO_END);
+    size_t physmap_size = MAX(ram_size, MMIO_END);
     phys_addr_t physmap_l1_cnt = 
         ROUND_UP(physmap_size, VM_L1_ENTRY_SIZE) / VM_L1_ENTRY_SIZE;
     
@@ -208,7 +228,7 @@ void pmap_vm_init(phys_addr_t ram_base, phys_addr_t ram_size,
     
     // RAM physmap
     vm_init_map_contiguous(pmap_kernel, &allocation_ptr,
-        PTE_TEMPLATE_BLOCK_DEVICE_RW, /* PTE template */
+        PTE_TEMPLATE_PAGE_DEVICE_KERN_RW, /* PTE template */
         physmap_vm_base + 0x00,
         0x00 /* phys_base */, 
         ROUND_UP(ram_size, PAGE_SIZE) >> PAGE_SHIFT /* page count */
@@ -216,15 +236,20 @@ void pmap_vm_init(phys_addr_t ram_base, phys_addr_t ram_size,
 
     // MMIO physmap
     vm_init_map_contiguous(pmap_kernel, &allocation_ptr,
-        PTE_TEMPLATE_BLOCK_DEVICE_RW, /* PTE template */
+        PTE_TEMPLATE_PAGE_DEVICE_KERN_RW, /* PTE template */
         physmap_vm_base + MMIO_BASE,
         MMIO_BASE /* phys_base */, 
         ROUND_UP(MMIO_END - MMIO_BASE, PAGE_SIZE) >> PAGE_SHIFT /* page count */
     );
 
-    printf("[*] pmap: created kernel pmap (used %llu pages)\n", 
+
+    printf("[*] pmap_init: Created kernel pmap (used %llu pages)\n", 
         (allocation_ptr - bootstrap_pa_reserved) >> PAGE_SHIFT
     );
+
+    /* Activate the kernel pmap before going forwards to provide a stable KVA */
+    vm_bootstrap_switch_to_pmap_kernel(pmap_kernel->table_base);
+    printf("[*] Switched to kernel pmap!\n");
 
     pmap_buddy_allocator_init(ram_base, ram_size, allocation_ptr);
 }

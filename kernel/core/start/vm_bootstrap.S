@@ -141,7 +141,7 @@ Lvm_bootstrap_map_loop_again:
 Lvm_bootstrap_map_loop_done:
     /* Load the KVA table into TTBR1 but don't activate it */
     orr     x1, x1, TTBR_CNP
-    msr     TTBR1_EL1, x1
+    msr     ttbr1_el1, x1
     
     /* Configure SCTLR for bootstrap before going into the shared vm_init */
     MOVC    x1, SCTLR_EL1_BOOTSTRAP_CONFIG
@@ -188,6 +188,25 @@ vm_init:
 
     /* Return to LR in KVA map */
     ret
+
+/** 
+Switches kernel page table to x0 and sets SCTLR to the booted configuration
+*/
+.global EXT(vm_bootstrap_switch_to_pmap_kernel)
+EXT(vm_bootstrap_switch_to_pmap_kernel):
+    dsb     ish                         /* wait for memory to sync */
+    orr     x0, x0, TTBR_CNP
+    msr     ttbr1_el1, x0               /* set new page table */
+    tlbi    vmalle1
+    dsb     ish                         /* wait for tlb purge */
+    isb                                 /* wait for final activation */
+    /* we are now on pmap_kernel -- set booted SCTLR config */
+    MOVC    x1, SCTLR_EL1_CONFIG
+    msr     sctlr_el1, x1
+    isb                                 /* wait for config to apply */
+
+    ret
+
 
 
 .section ".rodata"

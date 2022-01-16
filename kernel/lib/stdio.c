@@ -3,9 +3,6 @@
 #include "ctype.h"
 #include "machine/io/console/console.h"
 
-#define ROUND_UP(X, STEP) (((X) + (STEP)-1) / (STEP) * (STEP))
-#define ROUND_DOWN(X, STEP) ((X) / (STEP) * (STEP))
-
 /* Auxiliary data for vsnprintf_helper(). */
 struct vsnprintf_aux {
   char* p;        /* Current output position. */

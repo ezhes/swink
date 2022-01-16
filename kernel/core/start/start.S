@@ -56,29 +56,28 @@ Lstart_in_el1:
     msr     cpacr_el1, x0
 
     /*
-    XXX: We assume that the kernel was loaded at/above 0x80000 and that all 
-    memory below is safe, physical memory. This gives us ~128 4K pages for
-    bootstrap.
-    Throughout init, we hold the ""allocator"" pointer in x0.
+    We assume that the memory after the kernel is writable.
+    Throughout init, we hold the ""allocator"" pointer in x0 which always refers
+    to the next free slot
 
-    Allocations:
-    [0x7f000, 0x80000) : Boot CPU exception stack
-    [0x7e000, 0x7f000) : Boot CPU kernel stack
-    [0x7a000, 0x7e000) : VM bootstrap tables (4 cnt.) -- see vm_bootstrap.S
+    Allocations (+__kernel_map_end):
+    [0x00000, 0x01000) : Boot CPU exception stack
+    [0x01000, 0x02000) : Boot CPU kernel stack
+    [0x02000, 0x06000) : VM bootstrap tables (4 cnt.) -- see vm_bootstrap.S
     */
 
     /* Setup bootstrap data below the code */
-    adr     x19, _start                     /* stash the bootstrap region's address */
+    ADRL    x19, __kernel_map_end            /* stash the bootstrap PA region max (always page aligned) */
+    mov     x0, x19
     /* Prepare exception stack */
     msr     SPSel, #1
-    ADRL    x0, _start
-    mov     sp, x0
-    sub     x0, x0, PAGE_SIZE
+    add     x0, x0, PAGE_SIZE
+    mov     sp, x0                           /* end of first page */
 
     /* Prepare initial kernel thread stack */
     msr     SPSel, #0
-    mov     sp, x0
-    sub     x0, x0, 2 * PAGE_SIZE           /* x0 now points to a free page */
+    add     x0, x0, PAGE_SIZE
+    mov     sp, x0                           /* end of second page */
 
     /* Setup bootstrap tables -- returns us back into KVA space */
     bl      EXT(vm_bootstrap)
@@ -93,7 +92,7 @@ Lstart_in_el1:
 
 _primary_core_boot:
     /* Launch ourselves into C */
-    mov     x0, x19                         /* pass bootstrap reservation */
+    add     x0, x19, #0x06000               /* Reserve static bootstrap region */
     bl      EXT(main)
     /* main should never return, panic if it does */
     ADRL    x0, Lstartup_returned

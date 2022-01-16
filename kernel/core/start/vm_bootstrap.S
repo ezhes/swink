@@ -14,11 +14,6 @@
 1:
 .endmacro
 
-.macro MAP_RANGE table_ptr table_ptr_i range_start_label range_stop_label template scratch
-
-    cmp     \table_ptr_i, PAGE_ENTRY_COUNT
-.endmacro
-
 /*
 L3 = 512 * 1<<12 = 2MB
 L2 = 512 * 512 * 1<<12 = 1GB
@@ -33,12 +28,13 @@ L1 (TTBR1) KVA Bootstrap
 	0	L3
 		0	Kernel, BSS, etc (2MB). We only use one table since the kernel is 
             small enough to fit on one table (at least for the moment)
+    block entries (16) 
 
 Allocations (sync with start.S):
-[0x7d000, 0x7e000) : P=V L1
-[0x7c000, 0x7d000) : KVA L1
-[0x7b000, 0x7c000) : KVA L2
-[0x7a000, 0x7b000) : KVA L3 
+[0x02000, 0x03000) : P=V L1
+[0x03000, 0x04000) : KVA L1
+[0x04000, 0x05000) : KVA L2
+[0x05000, 0x06000) : KVA L3 
 */
 .section ".text"
 .global EXT(vm_bootstrap)
@@ -46,10 +42,10 @@ EXT(vm_bootstrap):
     /* physical allocation ptr in x0 */
     /* Allocate the P=V table into x1 */
     mov     x1, x0
-    sub     x0, x0, PAGE_SIZE
+    add     x0, x0, PAGE_SIZE
     /* 
     Allocate the first four slots of VA [0x0, 0x100000000] (4GB phys) 
-    We don't actually both doing this mapping ""correctly"" and only covering
+    We don't actually bother doing this mapping ""correctly"" and only cover
     the expected amount of physical memory (i.e. some physical memory may be
     invalid) but since the minimum amount of PA space is 32 on ARM, this is OK
     We leave the real physmap init to C since this table will be thrown away
@@ -89,10 +85,10 @@ EXT(vm_bootstrap):
     x5 = scratch
     */
     mov     x1, x0
-    sub     x2, x1, PAGE_SIZE
-    sub     x3, x2, PAGE_SIZE
-    sub     x0, x0, PAGE_SIZE * 3
-    ZERO_PAGE x3, x5, PAGE_SIZE * 3         /* zero FROM x3 since it's lower */
+    add     x2, x1, PAGE_SIZE
+    add     x3, x2, PAGE_SIZE
+    add     x0, x0, PAGE_SIZE * 3
+    ZERO_PAGE x1, x5, PAGE_SIZE * 3         /* zero tables L1, L2, L3 */
     /* Setup L1->L2 link in first slot */
     MOVC    x4, PTE_TEMPLATE_TABLE_KERN_ONLY
     /* Since the PA is aligned, the encoding works such that we can add the oPA*/
@@ -148,8 +144,8 @@ Lvm_bootstrap_map_loop_done:
     msr     TTBR1_EL1, x1
     
     /* Configure SCTLR for bootstrap before going into the shared vm_init */
-    MOVC    x0, SCTLR_EL1_BOOTSTRAP_CONFIG
-    msr     sctlr_el1, x0
+    MOVC    x1, SCTLR_EL1_BOOTSTRAP_CONFIG
+    msr     sctlr_el1, x1
 
     /* attempt to init the VM */
     b vm_init
@@ -185,9 +181,9 @@ vm_init:
     dsb     ish
     isb
     /* enable the MMU! */
-    mrs     x0, sctlr_el1
-    orr     x0, x0, SCTLR_M
-    msr     sctlr_el1, x0
+    mrs     x1, sctlr_el1
+    orr     x1, x1, SCTLR_M
+    msr     sctlr_el1, x1
     isb
 
     /* Return to LR in KVA map */

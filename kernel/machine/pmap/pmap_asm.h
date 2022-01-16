@@ -8,52 +8,52 @@
  * CPUs that do not support CNP simply ignore this bit.
  */
 #define TTBR_CNP_SHIFT          (0)
-#define TTBR_CNP                (1 << TTBR_CNP_SHIFT)
+#define TTBR_CNP                (1ULL << TTBR_CNP_SHIFT)
 
 /* Table PTE constants */
 #define NS_TABLE_SHIFT          (63)
-#define NS_TABLE                (1 << NS_TABLE_SHIFT)
+#define NS_TABLE                (1ULL << NS_TABLE_SHIFT)
 #define AP_TABLE_SHIFT          (61)
-#define AP_TABLE_MASK           (0b11 << AP_TABLE_SHIFT)
+#define AP_TABLE_MASK           (0b11ULL << AP_TABLE_SHIFT)
 #define UXN_TABLE_SHIFT         (60)
-#define UXN_TABLE               (1 << UXN_TABLE_SHIFT)
+#define UXN_TABLE               (1ULL << UXN_TABLE_SHIFT)
 #define PXN_TABLE_SHIFT         (59)
-#define PXN_TABLE               (1 << PXN_TABLE_SHIFT)
+#define PXN_TABLE               (1ULL << PXN_TABLE_SHIFT)
 
 /* Block PTE constants */
 #define SOFTWARE_BLOCK_SHIFT    (55)
-#define SOFTWARE_BLOCK_MASK     (0b1111 << SOFTWARE_BLOCK_SHIFT)
+#define SOFTWARE_BLOCK_MASK     (0b1111ULL << SOFTWARE_BLOCK_SHIFT)
 #define UXN_BLOCK_SHIFT         (54)
-#define UXN_BLOCK               (1 << UXN_BLOCK_SHIFT)
+#define UXN_BLOCK               (1ULL << UXN_BLOCK_SHIFT)
 #define PXN_BLOCK_SHIFT         (53)
-#define PXN_BLOCK               (1 << PXN_BLOCK_SHIFT)
+#define PXN_BLOCK               (1ULL << PXN_BLOCK_SHIFT)
 #define NOT_GLOBAL_BLOCK_SHIFT  (11)
-#define NOT_GLOBAL_BLOCK        (1 << NOT_GLOBAL_BLOCK_SHIFT)
+#define NOT_GLOBAL_BLOCK        (1ULL << NOT_GLOBAL_BLOCK_SHIFT)
 #define ACCESS_FLAG_BLOCK_SHIFT (10)
-#define ACCESS_FLAG_BLOCK       (1 << ACCESS_FLAG_BLOCK_SHIFT)
+#define ACCESS_FLAG_BLOCK       (1ULL << ACCESS_FLAG_BLOCK_SHIFT)
 #define SH_BLOCK_SHIFT          (8)
-#define SH_BLOCK_MASK           (0b11 << SH_BLOCK_SHIFT)
+#define SH_BLOCK_MASK           (0b11ULL << SH_BLOCK_SHIFT)
 #define AP_BLOCK_SHIFT          (6)
-#define AP_BLOCK_MASK           (0b11 << AP_BLOCK_SHIFT)
+#define AP_BLOCK_MASK           (0b11ULL << AP_BLOCK_SHIFT)
 #define MAIR_BLOCK_SHIFT        (2)
-#define MAIR_BLOCK_MASK         (0b111 << MAIR_BLOCK_SHIFT)
+#define MAIR_BLOCK_MASK         (0b111ULL << MAIR_BLOCK_SHIFT)
 
 #define OUTPUT_ADDRESS_SHIFT    (PAGE_SHIFT)
-#define OUTPUT_ADDRESS_MASK     (((1 << (47 - OUTPUT_ADDRESS_SHIFT)) - 1) << OUTPUT_ADDRESS_SHIFT)
+#define OUTPUT_ADDRESS_MASK     (((1ULL << (47 - OUTPUT_ADDRESS_SHIFT)) - 1) << OUTPUT_ADDRESS_SHIFT)
 #define OUTPUT_ADDRESS_TO_PTE(oa) ((oa & OUTPUT_ADDRESS_MASK) << OUTPUT_ADDRESS_SHIFT)
 
 /* APTable constants */
-#define AP_KERN_RW_USER_NA      (0b00)
-#define AP_KERN_RW_USER_RW      (0b01)
-#define AP_KERN_RO_USER_NA      (0b10)
-#define AP_KERN_RO_USER_RO      (0b11)
+#define AP_KERN_RW_USER_NA      (0b00ULL)
+#define AP_KERN_RW_USER_RW      (0b01ULL)
+#define AP_KERN_RO_USER_NA      (0b10ULL)
+#define AP_KERN_RO_USER_RO      (0b11ULL)
 #define AP_BLOCK_TO_PTE(ap)     ((ap) << AP_BLOCK_SHIFT)
 #define AP_TABLE_TO_PTE(ap)     ((ap) << AP_TABLE_SHIFT)
 
 /* Shareability constants */
-#define SH_NON_SHAREABLE        (0b00)
-#define SH_OUTER_SHAREABLE      (0b10)
-#define SH_INNER_SHAREABLE      (0b11)
+#define SH_NON_SHAREABLE        (0b00ULL)
+#define SH_OUTER_SHAREABLE      (0b10ULL)
+#define SH_INNER_SHAREABLE      (0b11ULL)
 #define SH_TO_PTE(sh)           ((sh) << SH_BLOCK_SHIFT)
 
 /* MAIR page table configuration */
@@ -61,8 +61,8 @@
 Attributes are the indirection indexes
 These indexes are defined arbitrarily and configured in platform_registers.h
 */
-#define MAIR_IDX_NORMAL         (0)
-#define MAIR_IDX_DEVICE         (1)
+#define MAIR_IDX_NORMAL         (0ULL)
+#define MAIR_IDX_DEVICE         (1ULL)
 #define MAIR_IDX_TO_PTE(mair)   ((mair) << MAIR_BLOCK_SHIFT)
 
 /* Templates */

@@ -157,11 +157,6 @@ dump_state(arm64_context_t context) {
 
 void exception_sync(arm64_context_t context) {
     dump_state(context);
-    if (ESR_EC(context->esr) == EXCEPTION_CLASS_BRK_64) {
-        printf("[debug] stepping over breakpoint...\n");
-        context->pc += 4;
-        return;
-    }
     panic("Unhandled exception (synchronous)");
 }
 

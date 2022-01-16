@@ -24,9 +24,10 @@ extern uint8_t __bss_end;
  * bootstrap phase, this memory may be reclaimed.
  */
 void 
-main(uintptr_t bootstrap_pa_reserved) {
+main(phys_addr_t bootstrap_pa_reserved) {
     /* zero BSS */
     memset(&__bss_start, 0x00, &__bss_end - &__bss_start);
+    
     console_init();
 
     printf(
@@ -50,17 +51,18 @@ main(uintptr_t bootstrap_pa_reserved) {
     }
     
     printf(
-        "ARM DRAM = 0x%08llx -> 0x%08llx\n"
+        "ARM DRAM = 0x%08llx -> 0x%08llx (->0x%08llx reserved)\n"
         "Model = 0x%08x, revision = 0x%08x\n"
         "VideoCore firmware version = 0x%08x\n\n",
-        arm_base, arm_base + arm_size,
+        arm_base, arm_base + arm_size, bootstrap_pa_reserved,
         board_model, board_revision,
         videocore_fw
     );
 
-    printf("main address = %p, reserved %llx\n", &main, bootstrap_pa_reserved);
+    pmap_vm_init(arm_base, arm_size, bootstrap_pa_reserved);
 
     printf("[*] Shutting down...\n");
+    routines_adp_application_exit(0);
     pmc_shutdown();
     // routines_core_idle();
     /* NO RETURN */

@@ -3,8 +3,11 @@
 #include "lib/debug.h"
 
 /**
- * @brief Infinite low-power loop
+ * Infinite low-power loop
  */
-extern void routines_core_idle(void) asm ("_routines_core_idle") NO_RETURN;
+extern void routines_core_idle(void) NO_RETURN;
 
-#endif /* CORE_CORE_ROUTINES */
+/** Signal to a hosting debugger that the OS is exiting */
+extern void routines_adp_application_exit(uint32_t exit_code) NO_RETURN;
+
+#endif /* MACHINE_ROUTINES */

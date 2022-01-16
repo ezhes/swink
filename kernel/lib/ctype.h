@@ -1,6 +1,9 @@
 #ifndef LIB_CTYPE
 #define LIB_CTYPE
 
+#define ROUND_UP(X, STEP) (((X) + (STEP)-1) / (STEP) * (STEP))
+#define ROUND_DOWN(X, STEP) ((X) / (STEP) * (STEP))
+
 static inline int islower(int c) { return c >= 'a' && c <= 'z'; }
 static inline int isupper(int c) { return c >= 'A' && c <= 'Z'; }
 static inline int isalpha(int c) { return islower(c) || isupper(c); }
@@ -21,5 +24,8 @@ static inline int ispunct(int c) { return isprint(c) && !isalnum(c) && !isspace(
 
 static inline int tolower(int c) { return isupper(c) ? c - 'A' + 'a' : c; }
 static inline int toupper(int c) { return islower(c) ? c - 'a' + 'A' : c; }
+
+#define MAX(x, y)   ((x) > (y) ? (x) : (y))
+#define MIN(x, y)   ((x) < (y) ? (x) : (y))
 
 #endif /* LIB_CTYPE */

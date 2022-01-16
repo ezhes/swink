@@ -28,6 +28,7 @@
 
 #if PLATFORM_RPI3
 #define MMIO_BASE       0x3F000000
+#define MMIO_END        0x40000000
 
 #define GP_BASE         (MMIO_BASE + 0x00200000)
 #define GPFSEL0         ((volatile unsigned int*)(GP_BASE + 0x00))

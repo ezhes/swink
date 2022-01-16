@@ -6,5 +6,14 @@ if [[ "$1" == "-d" ]]; then
 fi
 
 echo "Starting QEMU (press ctr-A, X to terminate)..."
-qemu-system-aarch64 -M raspi3b -kernel build/kernel8.img -nographic -serial null -serial mon:stdio $DEBUG_ARG
-echo "QEMU exited"
+qemu-system-aarch64 \
+	-M raspi3b \
+	-kernel build/kernel8.img \
+	-nographic \
+	-serial null \
+	-serial mon:stdio \
+	-semihosting $DEBUG_ARG
+
+QEMU_EXIT=$?
+echo "QEMU exited (status = $QEMU_EXIT)"
+exit $QEMU_EXIT

@@ -20,23 +20,26 @@ set( CMAKE_TRY_COMPILE_TARGET_TYPE STATIC_LIBRARY )
 add_link_options("LINKER:-nostdlib,-m,${LINKER_TARGET},-flto")
 
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -flto")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -O3")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -g")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wall")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdinc")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdlib")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffreestanding")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-unaligned-access")
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
+#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-unaligned-access")
 
 project (kernel C ASM)
 add_executable(kernel
     kernel/core/start/start.S
     kernel/core/start/vm_bootstrap.S
     kernel/core/start/start.c
+
     kernel/core/exception/exception.S
     kernel/core/exception/exception.c
+
+    kernel/core/vm/vm_page_allocator.c
 
     kernel/lib/string.c
     kernel/lib/debug.c
@@ -49,8 +52,12 @@ add_executable(kernel
     kernel/machine/io/vc/vc_functions.c
 
     kernel/machine/pmap/pmap.c
+    kernel/machine/pmap/pmap_init.c
+    kernel/machine/pmap/pmap_buddy_allocator.c
 
     kernel/machine/routines/routines.S
+
+    kernel/machine/synchronization/synchs.c
 )
 target_link_options(kernel PUBLIC "LINKER:-T,${CMAKE_SOURCE_DIR}/kernel/link.ld")
 target_include_directories(kernel PRIVATE "${CMAKE_SOURCE_DIR}/kernel")

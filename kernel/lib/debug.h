@@ -13,4 +13,6 @@ void panic_macro(const char* file, int line, const char* function, const char* m
 
 #define panic(...) panic_macro(__FILE__, __LINE__, __func__, __VA_ARGS__)
 
+#define HW_BRK  asm("brk #1")
+
 #endif /* LIB_DEBUG */

@@ -8,10 +8,10 @@ SECTIONS
     __kernel_text_end = .;
 
     /* rodata is page aligned so we can memory protect it without relocation */
-    __kernel_rodata_start = .;
+    __kernel_ro_data_start = .;
     .rodata : { *(.rodata .rodata.* .gnu.linkonce.r*) }
     . = ALIGN(0x1000);
-    __kernel_rodata_end = .;
+    __kernel_ro_data_end = .;
 
     /* Data/BSS is page aligned so we can memory protect it without relocation */
     __kernel_rw_data_start = .;

@@ -28,7 +28,6 @@ set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -nostdlib")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -ffreestanding")
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -static")
 # set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Werror")
-#set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mno-unaligned-access")
 
 project (kernel C ASM)
 add_executable(kernel
@@ -44,6 +43,7 @@ add_executable(kernel
     kernel/lib/string.c
     kernel/lib/debug.c
     kernel/lib/stdio.c
+    kernel/lib/list.c
     
     kernel/machine/io/mini_uart/mini_uart.c
     kernel/machine/io/console/console.c
@@ -53,7 +53,7 @@ add_executable(kernel
 
     kernel/machine/pmap/pmap.c
     kernel/machine/pmap/pmap_init.c
-    kernel/machine/pmap/pmap_buddy_allocator.c
+    kernel/machine/pmap/pmap_pfa.c
 
     kernel/machine/routines/routines.S
 

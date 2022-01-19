@@ -20,6 +20,8 @@ STATIC_ASSERT(VM_KERNEL_BASE_ADDRESS ==
 
 struct pmap pmap_kernel_s;
 #define pmap_kernel     (&pmap_kernel_s)
+pmap_buddy_allocator_t pb_allocator;
+
 vm_addr_t physmap_vm_base;
 
 phys_addr_t pmap_kva_to_pa(vm_addr_t kva) {

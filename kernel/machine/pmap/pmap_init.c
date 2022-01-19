@@ -7,7 +7,7 @@
 #include "pmap_asm.h"
 #include "machine/platform_registers.h"
 #include "machine/io/gpio.h"
-#include "pmap_buddy_allocator.h"
+#include "pmap_pfa.h"
 #include "lib/stdio.h"
 #include "lib/ctype.h"
 #include "lib/string.h"
@@ -174,8 +174,10 @@ extern void vm_bootstrap_switch_to_pmap_kernel(phys_addr_t page_table_base);
     (kernel_base + KERNEL_SECTION_PA_BASE_OFFSET(s))
 #define KERNEL_SECTION_VA_BASE(s)   \
     ((vm_addr_t)(VM_KERNEL_BASE_ADDRESS + KERNEL_SECTION_PA_BASE_OFFSET(s)))
+#define KERNEL_SECTION_SIZE(s) \
+    (&(s ## _end) - &(s ## _start))
 #define KERNEL_SECTION_PAGE_COUNT(s)    \
-    ((&(s ## _end) - &(s ## _start)) >> PAGE_SHIFT)
+    (KERNEL_SECTION_SIZE(s) >> PAGE_SHIFT)
 
 void pmap_vm_init(phys_addr_t kernel_base,
                   phys_addr_t ram_base, phys_addr_t ram_size,
@@ -250,6 +252,17 @@ void pmap_vm_init(phys_addr_t kernel_base,
     /* Activate the kernel pmap before going forwards to provide a stable KVA */
     vm_bootstrap_switch_to_pmap_kernel(pmap_kernel->table_base);
     printf("[*] Switched to kernel pmap!\n");
-
-    pmap_buddy_allocator_init(ram_base, ram_size, allocation_ptr);
+    
+    /*
+    Init the page frame allocator. This is the last time we are allowed to use 
+    the allocation pointer since the PFA has now taken ownership of physical
+    memory and marked both the now extended bootstrap region as allocated.
+    */
+   pmap_pfa_init(
+       ram_base, 
+       ram_size,
+       KERNEL_SECTION_PA_BASE(__kernel_text),
+       KERNEL_SECTION_SIZE(__kernel_text),
+       allocation_ptr
+   );
 }

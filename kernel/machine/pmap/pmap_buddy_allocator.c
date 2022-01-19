@@ -15,6 +15,7 @@ It implements power of two chunks size ranging from 4K to 256K using bitmaps.
 
 #define BUDDY_LEVELS    (4)     /* Max level is 4K^{BUDDY_LEVELS}, or 256K */
 #define BITS_PER_BIN    (64)    /* We use 64-bit bins */ 
+
 struct pmap_buddy_allocator {
     struct synchs_lock lock;
 
@@ -30,8 +31,7 @@ struct pmap_buddy_allocator {
     uint32_t bitmap_bit_count[BUDDY_LEVELS];
 
     uint64_t ram_base;
-    uint64_t ram_size;
-
+    uint64_t ram_size; 
 
     /** Bitmap buffer -- levels are defined by bitmap_offsets and  */
     uint64_t bitmap[0];

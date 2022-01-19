@@ -14,7 +14,9 @@
         "vm_asm.h": "c",
         "ctype.h": "c",
         "pmap.h": "c",
-        "assert.h": "c"
+        "assert.h": "c",
+        "pmap_mds.h": "c",
+        "synchs.h": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

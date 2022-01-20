@@ -106,6 +106,23 @@ that all other existing operating systems face today.
 			* A good scheduler could allow us to have multiple fast tables where we only end up paying for contex switches when we cross tables
 	* If we don't support migration, can store the lifeguard tables in TTBR1 (which works nicely since we can put SIG there) and then unmap TTBR0 via TCR_EL1 to allow execution of micro processes at any time with zero context switching
 		* Maybe make micro-processes an opt in thing, like you accept that you are VM restricted but you get scheduler priority since you are cheaper (might be good for realtime processes? )
-		* Can we mess with T0SZ, actually? So that when T0SZ is a specific size the micro processes are in the fault region? or something to that effect 
+		* Can we mess with T0SZ, actually? So that when T0SZ is a specific size the micro processes are in the fault region? or something to that effect
+			* If we place them in all TTBR0s near 0x000, we can keep the guard
+			on while executing normal processes (prevent others from tampering
+			with micro processes) and adjust T0SZ when executing micro processes
+			to prevent micros from messing with macros. We can't pull this trick
+			with T1SZ since that would move the entire kernel up or down since
+			index 0 in TTBR1 always is at the first valid address after T1SZ
+			whereas (I think) T0SZ truncates from the end of the table 
 * **I don't think we've actually solved the alignment issue -- the guard and the matching pool watchpoint may (?) not always be able to exclude only a specific region**
-	* This is only a maybe, haven't done the math
+	* This is kind of a big problem. We don't have base and bound, we only have 
+	masking
+	* Our best bet is to pivot to drop the lifeguard design (which requires too 
+	much dexterity) and instead use all four watchpoints to define a \~8GB
+	VA region. Each process gets 1GB of VA space by adjusting which half of the 
+	pool is guarded. This works because we can either guard at 2GB with 2GB 
+	alignment (cover the entire pool) or 1GB with 1GB alignment (cover either 
+	top or bottom of pool).
+		* This does somewhat simplify the linkers-and-loaders issue since 1GB
+		will let us just load the entire binary in the VA without needing weird
+		relocations and all the issues of PC relative access to BSS.

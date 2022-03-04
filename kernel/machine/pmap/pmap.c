@@ -7,7 +7,6 @@
 #include "pmap_asm.h"
 #include "machine/platform_registers.h"
 #include "machine/io/gpio.h"
-#include "pmap_buddy_allocator.h"
 #include "lib/stdio.h"
 #include "lib/ctype.h"
 #include "lib/string.h"
@@ -20,7 +19,6 @@ STATIC_ASSERT(VM_KERNEL_BASE_ADDRESS ==
 
 struct pmap pmap_kernel_s;
 #define pmap_kernel     (&pmap_kernel_s)
-pmap_buddy_allocator_t pb_allocator;
 
 vm_addr_t physmap_vm_base;
 
@@ -31,4 +29,14 @@ phys_addr_t pmap_kva_to_pa(vm_addr_t kva) {
 
 vm_addr_t pmap_pa_to_kva(phys_addr_t pa) {
     return physmap_vm_base + pa;
+}
+
+phys_addr_t pmap_physmap_kva_to_pa(vm_addr_t kva) {
+    /* 
+    The physmap is at the end of the KVA space, which means we can very easily
+    check and translate addresses in the physmap back to PAs
+    */
+   
+    REQUIRE(kva >= physmap_vm_base);
+    return kva - physmap_vm_base;
 }

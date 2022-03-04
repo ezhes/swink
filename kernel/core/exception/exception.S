@@ -93,7 +93,7 @@
     ldp     q26, q27, [sp, #ARM64_NEON_Q_26]
     ldp     q28, q29, [sp, #ARM64_NEON_Q_28]
     ldp     q30, q31, [sp, #ARM64_NEON_Q_30]
-    
+
     ldr     w0, [sp, #ARM64_NEON_FPSR]
     ldr     w1, [sp, #ARM64_NEON_FPSR]
     msr     fpsr, x0

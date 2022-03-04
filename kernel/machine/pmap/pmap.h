@@ -17,4 +17,11 @@ phys_addr_t pmap_kva_to_pa(vm_addr_t kva);
 /** Converts a physical address to a kernel virtual address */
 vm_addr_t pmap_pa_to_kva(phys_addr_t pa);
 
+/** 
+ * Converts a physmap KVA address to a physical address.
+ * The advantage of this function over pmap_kva_to_pa is that it is faster for
+ * physmap addresses as it does not require paging to translate an address
+ */
+phys_addr_t pmap_physmap_kva_to_pa(vm_addr_t kva);
+
 #endif /* PMAP_H */

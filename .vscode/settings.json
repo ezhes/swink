@@ -16,7 +16,8 @@
         "pmap.h": "c",
         "assert.h": "c",
         "pmap_mds.h": "c",
-        "synchs.h": "c"
+        "synchs.h": "c",
+        "pmap_pfa.h": "c"
     },
     "C_Cpp.dimInactiveRegions": false
 }

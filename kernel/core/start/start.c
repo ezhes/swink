@@ -6,6 +6,7 @@
 #include "lib/string.h"
 #include "machine/pmap/pmap.h"
 #include "machine/pmap/pmap_init.h"
+#include "machine/pmap/pmap_pfa.h"
 #include "machine/platform_registers.h"
 
 extern uint8_t __bss_start;
@@ -68,6 +69,15 @@ main(phys_addr_t kernel_base, phys_addr_t bootstrap_pa_reserved) {
         arm_ram_base, arm_ram_size, 
         bootstrap_pa_reserved
     );
+
+    // pmap_page_metadata_s m;
+    // m.padding = 0;
+    // m.page_type = PMAP_PAGE_TYPE_KERNEL_DATA;
+    // phys_addr_t addr;
+    // while ((addr = pmap_pfa_alloc_contig(PAGE_SIZE, &m)) != PHYS_ADDR_INVALID) {
+    //     printf("%p\n", (void *)addr);
+    // }
+    // printf("oom\n");
 
     printf("[*] Shutting down...\n");
     routines_adp_application_exit(0);

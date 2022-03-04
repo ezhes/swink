@@ -38,19 +38,12 @@ pmap_pfa_init(phys_addr_t ram_base,
               phys_addr_t bootstrap_pa_reserved);
 
 /**
- * Request a single page from the PFA and marks it as TYPE in the MDS. If no 
- * page could be allocated, returns PHYS_ADDR_INVALID. 
- */
-phys_addr_t
-pmap_pfa_alloc(pmap_page_type_e type);
-
-/**
  * Requests SIZE bytes of contiguous, aligned memory from the allocator. 
  * If an allocation can be made, METADATA is applied to those pages and the
  * address at the start of the allocation is returned.
  * If no such allocation can be made, returns PHYS_ADDR_INVALID
  * 
- * If the allocation is small (SIZE < (PAGE_SIZE << BUDDY_LEVELS)), this
+ * If the allocation is small (SIZE < (PAGE_SIZE << (BUDDY_LEVELS - 1))), this
  * function is constant time. If the allocation is large, this function may take
  * linear time with respects to the size of system memory.
  */
@@ -62,6 +55,5 @@ pmap_pfa_alloc_contig(size_t size, pmap_page_metadata_s *metadata);
  */
 void
 pmap_pfa_free(phys_addr_t page);
-
 
 #endif /* PMAP_PFA_H */

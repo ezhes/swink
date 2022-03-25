@@ -50,6 +50,15 @@ test_runner_run(void) {
                 test_pass_count += 1;
             }
         }
+
+        if (suite->teardown_function) {
+            if ((result = suite->teardown_function()) < 0) {
+                panic(
+                    "Test suite teardown failed (result=%d, suite=%s, sid=%zu)",
+                    result, suite->name, suite_i
+                );
+            }
+        }
     }
 
     printf(TAG "Run complete: %zu/%zu passed\n", test_pass_count, test_count);

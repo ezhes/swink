@@ -3,14 +3,45 @@
 #include "lib/ctype.h"
 #include "lib/string.h"
 #include "lib/list.h"
-
 #include "lib/stdio.h"
+
+/*
+~* PMAP_PFA *~
+This file contains the code for two tightly coupled features. Namely, the Page
+Frame Allocator (PFA) and the Metadata Store (MDS). Although we'll discuss both 
+of these features in detail, both revolve around the general topic of managing
+and tracking the allocation of physical memory for the entire system.
+
+** The Page Frame Allocator **
+The PFA is the sole kernel agent responsible for managing physical memory
+allocations on the system. If you need a DRAM page, you need to ask the PFA to
+give you one.
+
+The PFA is implemented as a buddy allocator [1] with `BUDDY_LEVELS` levels. The
+PFA has two data structures which work together to make allocations possible.
+The buddy_lists field of the PFA holds a series of linked lists of all free
+pages on a given level. The buddy_bitmaps field of the PFA holds a series of
+bitmaps which indicate the free state of any given managed physical page. These
+two structures allow for constant time allocation of any chunk size less than or
+equal to PAGE_SIZE<<(BUDDY_LEVELS - 1).
+
+** The Metadata Store **
+One of the kernels goals is to provide strong memory corruption. A key part of
+achieving this is through detailed accounting of what data is held where so as
+to enable software defined memory policies. The MDS is a sidecar datastructure
+in the PFA which holds metadata concerning both the use (i.e. is the page being
+using for holding program text, page tables, etc.) as well as page state (is the
+page currently being paged out?). It is implemented as a large contiguous array
+of metadata entries. 
+
+[1] https://en.wikipedia.org/wiki/Buddy_memory_allocation
+
+*/
 
 #define BUDDY_LEVELS    (6)     /* Max level: 4K<<{BUDDY_LEVELS - 1}, or 128K */
 
 #define PFA_LOCK(pfa)   (synchs_lock_acquire(&pfa->lock))
 #define PFA_UNLOCK(pfa)   (synchs_lock_release(&pfa->lock))
-
 
 /**
  * In the buddy_bitmap, indicates that a given page is allocated (not free)
@@ -253,6 +284,11 @@ apply_metadata_range_locked(page_id_t base, size_t page_count,
     memset(pfa->metadata + base - pfa->page_base, m8, page_count);
 }
 
+/**
+ * Inserts freed pages in range [BASE, BASE+PAGE_COUNT) into the free lists and
+ * buddy bitmaps. Note: this function DOES NOT merge and MUST NOT be used for
+ * freeing pages.
+ */
 static pmap_pfa_free_entry_t
 buddy_insert_range_freed_locked(page_id_t base, page_id_t page_count) {
     page_id_t free_i;
@@ -288,52 +324,6 @@ buddy_insert_range_freed_locked(page_id_t base, page_id_t page_count) {
         free_i += buddy_level_page_count(level);
     }
     return fe;
-}
-
-static void
-buddy_free_pages_locked(page_id_t base, page_id_t page_count) {
-    page_id_t i = 0;
-    for (; i < page_count; i++) {
-        pmap_pfa_free_entry_t fe = NULL;
-        unsigned int level_i = 0;
-        page_id_t page_i = 0;
-
-        page_i = base + i;
-        /* merge up, -1 since we never merge on top level */
-        for (; level_i < BUDDY_LEVELS - 1; level_i++) {
-            page_id_t buddy_i = 0;
-
-            buddy_i = get_buddy_page_id_for_page(page_i, level_i);
-            if (buddy_bitmap_get_bit_locked(buddy_i, level_i)
-                == BUDDY_BIT_ALLCOATED) {
-                /* Our buddy is not free. Our journey ends here. */
-                break;
-            }
-            pmap_pfa_free_entry_t buddy_fe = NULL;
-            /* 
-            Our buddy is free! 
-            Since we have not marked ourselves as free yet, we only need to
-            free our buddy before continuing (since we are implicitly free).
-            */
-            buddy_bitmap_set_bit_locked(buddy_i, level_i, BUDDY_BIT_ALLCOATED);
-
-            buddy_fe = get_pfa_free_entry_for_page(buddy_i);
-            list_remove(&buddy_fe->elem);
-
-            /* continue with the root */
-            page_i = get_root_buddy_page_id_for_page(page_i, level_i);
-        }
-
-        /*
-        Finalize our free for this page.
-        level_i holds the level we bailed on and is thus where we should insert
-        the free record for page_i
-        */
-
-        fe = get_pfa_free_entry_for_page(page_i);
-        list_push_front(pfa->buddy_lists + level_i, &fe->elem);
-        buddy_bitmap_set_bit_locked(page_i, level_i, BUDDY_BIT_FREE);
-    }
 }
 
 void
@@ -483,8 +473,6 @@ pmap_pfa_alloc_contig_small_locked(size_t size,
             /* 
             We found a list with at least one element on it, grab the first free
             chunk off the buddy list.
-            Note: we don't remove it yet as free_entry_split assumes it is on
-            its appropriate list.
             */
             allocated_entry = list_entry(
                 list_front(buddy_list), 
@@ -582,6 +570,56 @@ pmap_pfa_mds_require_range_type(page_id_t page, page_id_t count,
         }
     }
     PFA_UNLOCK(pfa);
+}
+
+/**
+ * Frees pages in range [BASE, BASE+PAGE_COUNT) by both modifying the free list
+ * and the buddy bitmaps. This performs all necessary merging.
+ */
+static void
+buddy_free_pages_locked(page_id_t base, page_id_t page_count) {
+    page_id_t i = 0;
+    for (; i < page_count; i++) {
+        pmap_pfa_free_entry_t fe = NULL;
+        unsigned int level_i = 0;
+        page_id_t page_i = 0;
+
+        page_i = base + i;
+        /* merge up, -1 since we never merge on top level */
+        for (; level_i < BUDDY_LEVELS - 1; level_i++) {
+            page_id_t buddy_i = 0;
+
+            buddy_i = get_buddy_page_id_for_page(page_i, level_i);
+            if (buddy_bitmap_get_bit_locked(buddy_i, level_i)
+                == BUDDY_BIT_ALLCOATED) {
+                /* Our buddy is not free. Our journey ends here. */
+                break;
+            }
+            pmap_pfa_free_entry_t buddy_fe = NULL;
+            /* 
+            Our buddy is free! 
+            Since we have not marked ourselves as free yet, we only need to
+            free our buddy before continuing (since we are implicitly free).
+            */
+            buddy_bitmap_set_bit_locked(buddy_i, level_i, BUDDY_BIT_ALLCOATED);
+
+            buddy_fe = get_pfa_free_entry_for_page(buddy_i);
+            list_remove(&buddy_fe->elem);
+
+            /* continue with the root */
+            page_i = get_root_buddy_page_id_for_page(page_i, level_i);
+        }
+
+        /*
+        Finalize our free for this page.
+        level_i holds the level we bailed on and is thus where we should insert
+        the free record for page_i
+        */
+
+        fe = get_pfa_free_entry_for_page(page_i);
+        list_push_front(pfa->buddy_lists + level_i, &fe->elem);
+        buddy_bitmap_set_bit_locked(page_i, level_i, BUDDY_BIT_FREE);
+    }
 }
 
 void

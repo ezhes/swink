@@ -26,7 +26,7 @@ struct test_suite {
     test_function_t setup_function;
 
     /**
-     * A function called once after the suite has finished executing any of the
+     * A function called once after the suite has finished executing all of the
      * requested tests.
      * If no function is needed, set to NULL.
      * Return negative to indicate a failure

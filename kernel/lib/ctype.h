@@ -28,4 +28,7 @@ static inline int toupper(int c) { return islower(c) ? c - 'a' + 'A' : c; }
 #define MAX(x, y)   ((x) > (y) ? (x) : (y))
 #define MIN(x, y)   ((x) < (y) ? (x) : (y))
 
+#define COUNT_OF(x) ((sizeof(x)/sizeof(0[x])) \
+  / ((size_t)(!(sizeof(x) % sizeof(0[x])))))
+
 #endif /* LIB_CTYPE */

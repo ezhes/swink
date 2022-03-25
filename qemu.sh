@@ -8,7 +8,7 @@ fi
 echo "Starting QEMU (press ctr-A, X to terminate)..."
 qemu-system-aarch64 \
 	-M raspi3b \
-	-kernel build/kernel8.img \
+	-kernel build/kernel/kernel8.img \
 	-nographic \
 	-serial null \
 	-serial mon:stdio \

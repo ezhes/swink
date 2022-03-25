@@ -8,6 +8,9 @@
 #include "machine/pmap/pmap_init.h"
 #include "machine/pmap/pmap_pfa.h"
 #include "machine/platform_registers.h"
+#ifdef CONFIG_TESTING
+#include "testing/runner.h"
+#endif
 
 extern void pmap_pfa_dump_state(void);
 extern void pmap_pfa_get_state(size_t *level_buffer, size_t count);
@@ -74,79 +77,21 @@ main(phys_addr_t kernel_base, phys_addr_t bootstrap_pa_reserved) {
         bootstrap_pa_reserved
     );
 
-    pmap_page_metadata_s m;
-    m.padding = 0;
-    m.page_type = PMAP_PAGE_TYPE_KERNEL_DATA;
-    size_t original_state[6];
-    size_t temp_state[6];
-
-    pmap_pfa_dump_state();
-    pmap_pfa_get_state(original_state, 6);
-
-    phys_addr_t addr;
-    for (unsigned int pg_count = 1; pg_count < 32; pg_count++) {
-        addr = pmap_pfa_alloc_contig(PAGE_SIZE * pg_count, &m);
-        printf("alloc gave %d for %d pages\n", addr >> PAGE_SHIFT, pg_count);
-        pmap_pfa_free_contig(addr, PAGE_SIZE * pg_count);
-        printf("freed %d\n", pg_count);
-
-        pmap_pfa_get_state(temp_state, 6);
-        if (memcmp(original_state, temp_state, sizeof(temp_state))) {
-            pmap_pfa_dump_state();
-            panic("failed!");
-        }
-    }
-
-    phys_addr_t addrs[32];
-    for (unsigned int pg_count = 1; pg_count < 32; pg_count++) {
-        addrs[pg_count - 1] = pmap_pfa_alloc_contig(PAGE_SIZE * pg_count, &m);
-    }
-
-    for (unsigned int pg_count = 31; pg_count >= 1; pg_count--) {
-        printf("1 *** freeing %d (%d)\n", pg_count, addrs[pg_count - 1] >> PAGE_SHIFT);
-        pmap_pfa_free_contig(addrs[pg_count - 1], PAGE_SIZE * pg_count);
-    }
-
-    for (unsigned int pg_count = 1; pg_count < 32; pg_count++) {
-        addrs[pg_count - 1] = pmap_pfa_alloc_contig(PAGE_SIZE * pg_count, &m);
-    }
-
-    for (unsigned int pg_count = 1; pg_count < 32; pg_count++) {
-        printf("2 *** freeing %d (%d)\n", pg_count, addrs[pg_count - 1] >> PAGE_SHIFT);
-        pmap_pfa_free_contig(addrs[pg_count - 1], PAGE_SIZE * pg_count);
-    }
-
-    for (unsigned int pg_count = 31; pg_count >= 1; pg_count--) {
-        addrs[pg_count - 1] = pmap_pfa_alloc_contig(PAGE_SIZE * pg_count, &m);
-        printf("alloc gave %d for %d pages\n", addrs[pg_count - 1] >> PAGE_SHIFT, pg_count);
-    }
-
-    for (unsigned int pg_count = 1; pg_count < 32; pg_count++) {
-        printf("3 *** freeing %d (%d)\n", pg_count, addrs[pg_count - 1] >> PAGE_SHIFT);
-        pmap_pfa_free_contig(addrs[pg_count - 1], PAGE_SIZE * pg_count);
-    }
-
-
-    pmap_pfa_get_state(temp_state, 6);
-    if (memcmp(original_state, temp_state, sizeof(temp_state))) {
-        pmap_pfa_dump_state();
-        panic("failed!");
-    }
-
-    printf("*** TEST PASS!\n");
-
-    // uint64_t pages = 0;
-    // while ((addr = pmap_pfa_alloc_contig(PAGE_SIZE, &m)) != PHYS_ADDR_INVALID) {
-    //     printf("alloc %d\n", addr >> PAGE_SHIFT);
-    //     pages++;
-    // }
-    // // 245065
-    // printf("allocated %llu pages before OOM\n", pages);
-
+#ifdef CONFIG_TESTING
+    /*
+    If this is a test kernel, run the tests. This will trigger a shutdown after
+    */
+    test_runner_run();
+    panic("Test runner must not return");
+ #else
+    /*
+    If this is not a test kernel, continue with regular boot
+    */
 
     printf("[*] Shutting down...\n");
-    // routines_adp_application_exit(0);
     pmc_shutdown();
+    routines_adp_application_exit(0);
     routines_core_idle();
     /* NO RETURN */
+ #endif /* CONFIG_TESTING */
 }

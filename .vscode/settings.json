@@ -17,7 +17,13 @@
         "assert.h": "c",
         "pmap_mds.h": "c",
         "synchs.h": "c",
-        "pmap_pfa.h": "c"
+        "pmap_pfa.h": "c",
+        "test.h": "c",
+        "test_utils.h": "c",
+        "string.h": "c"
     },
-    "C_Cpp.dimInactiveRegions": false
+    "C_Cpp.dimInactiveRegions": false,
+    "cmake.configureSettings" : {
+        "KERNEL_VARIANT": "TESTING"
+    }
 }

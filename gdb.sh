@@ -1,1 +1,1 @@
-gdb-multiarch build/kernel -ex "target remote localhost:1234"
+gdb-multiarch build/kernel/kernel -ex "target remote localhost:1234"

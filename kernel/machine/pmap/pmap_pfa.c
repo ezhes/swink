@@ -129,16 +129,6 @@ min_buddy_level_for_size_no_overflow(size_t size) {
 /** Get the lowest buddy level which contains entries of at least size bytes */
 static inline unsigned int
 min_buddy_level_for_size(size_t size) {
-    // unsigned int level = 0;
-    // size_t value = PAGE_SIZE;
-
-    // while (level < BUDDY_LEVELS - 1 && value < size) {
-    //     level++;
-    //     value <<= 1;
-    // }
-
-    // return level;
-
     if (size <= PAGE_SIZE) {
         return 0;
     } else {
@@ -195,7 +185,8 @@ buddy_bitmap_required_bytes_for_level(page_id_t page_count,
                                       unsigned int level_i) {
     /* Each bitmap entry holds 64 bits per uint64_t */
     size_t pages_per_slot = 64 << level_i;
-    return ROUND_UP(page_count, pages_per_slot) / pages_per_slot;
+    size_t slots = ROUND_UP(page_count, pages_per_slot) / pages_per_slot;
+    return slots * sizeof(uint64_t);
 }
 
 static inline size_t
@@ -259,7 +250,7 @@ apply_metadata_range_locked(page_id_t base, size_t page_count,
 
     uint8_t m8;
     memcpy(&m8, metadata, sizeof(*metadata)); 
-    memset(&pfa->metadata + base - pfa->page_base, m8, page_count);
+    memset(pfa->metadata + base - pfa->page_base, m8, page_count);
 }
 
 static pmap_pfa_free_entry_t
@@ -267,7 +258,6 @@ buddy_insert_range_freed_locked(page_id_t base, page_id_t page_count) {
     page_id_t free_i;
     page_id_t limit;
     pmap_pfa_free_entry_t fe = NULL;
-    // printf("Inserting %d + %d\n", base, page_count);
 
     limit = base + page_count;
     for (free_i = base; free_i < limit;) {
@@ -288,7 +278,6 @@ buddy_insert_range_freed_locked(page_id_t base, page_id_t page_count) {
             max_buddy_level_for_page_alignment(free_i),
             min_buddy_level_for_size_no_overflow((limit - free_i) << PAGE_SHIFT)
         );
-        // printf("\tinserting %d at level %d\n", free_i, level);
 
         ASSERT(level >= 0 && level < BUDDY_LEVELS);
         ASSERT(1 << level <= limit - free_i);
@@ -304,7 +293,6 @@ buddy_insert_range_freed_locked(page_id_t base, page_id_t page_count) {
 static void
 buddy_free_pages_locked(page_id_t base, page_id_t page_count) {
     page_id_t i = 0;
-    // printf("freeing %d+%d\n", base, page_count);
     for (; i < page_count; i++) {
         pmap_pfa_free_entry_t fe = NULL;
         unsigned int level_i = 0;
@@ -327,7 +315,6 @@ buddy_free_pages_locked(page_id_t base, page_id_t page_count) {
             Since we have not marked ourselves as free yet, we only need to
             free our buddy before continuing (since we are implicitly free).
             */
-            // printf("\tmerge %d (buddy %d, level %d)\n", page_i, buddy_i, level_i);
             buddy_bitmap_set_bit_locked(buddy_i, level_i, BUDDY_BIT_ALLCOATED);
 
             buddy_fe = get_pfa_free_entry_for_page(buddy_i);
@@ -385,7 +372,7 @@ pmap_pfa_init(phys_addr_t ram_base,
     their locations and store them for simplicity
     */  
     pfa->metadata = 
-        (struct pmap_page_metadata *)((vm_addr_t)(&pfa) + bitmap_size);
+        (struct pmap_page_metadata *)((vm_addr_t)(pfa) + bitmap_size);
 
     /* 
     We don't init the metadata as there is no "free" state. It is only valid for
@@ -416,7 +403,7 @@ pmap_pfa_init(phys_addr_t ram_base,
     */
     buddy_insert_range_freed_locked(
         pa_to_page_id(bootstrap_pa_reserved),
-        size_to_page_count(ram_base + ram_size - bootstrap_pa_reserved)
+        size_to_page_count(ram_size - ram_base - bootstrap_pa_reserved)
     );
 
     pmap_page_metadata_s m;
@@ -426,8 +413,8 @@ pmap_pfa_init(phys_addr_t ram_base,
     m.page_type = PMAP_PAGE_TYPE_KERNEL_DATA;
     /* reserved data */
     apply_metadata_range_locked(
-        /* base page */ 0, 
-        size_to_page_count(bootstrap_pa_reserved), 
+        /* base page */ ram_base, 
+        size_to_page_count(bootstrap_pa_reserved - ram_base), 
         &m
     );
 
@@ -447,8 +434,8 @@ pmap_pfa_init(phys_addr_t ram_base,
     );
 
     printf(
-        "[*] pmap_pfa: Created PFA (used %zu pages)\n", 
-        required_bytes >> PAGE_SHIFT
+        "[*] pmap_pfa: Created PFA (used %zu pages, bitmap=%zu, MDS=%zu)\n", 
+        required_bytes >> PAGE_SHIFT, bitmap_size, mds_size
     );
 
 }
@@ -532,7 +519,6 @@ pmap_pfa_alloc_contig_small_locked(size_t size,
     allocated, full block (and thus if there was anything to join it
     would have already been joined before).
     */
-    // printf("allocated %d (level %d), insert %d, count %d\n", pa_to_page_id(allocated_element), allocated_entry->buddy_level, pa_to_page_id(allocated_element) + page_count, buddy_level_page_count(allocated_entry->buddy_level) - page_count);
     buddy_insert_range_freed_locked(
         pa_to_page_id(allocated_element) + page_count,
         buddy_level_page_count(level_i) - page_count
@@ -616,6 +602,7 @@ pmap_pfa_free_contig(phys_addr_t addr, size_t size) {
     PFA_UNLOCK(pfa);
 }
 
+#if (CONFIG_DEBUG || CONFIG_TESTING)
 void
 pmap_pfa_dump_state(void) {
     for (unsigned int level_i = 0; level_i < BUDDY_LEVELS; level_i++) {
@@ -645,7 +632,27 @@ pmap_pfa_dump_state(void) {
     }
 }
 
-void pmap_pfa_get_state(size_t *level_buffer, size_t count) {
+pmap_pfa_free_entry_t
+pmap_pfa_contains(unsigned int level, page_id_t page) {
+    struct list *buddy_list = NULL;
+    buddy_list = pfa->buddy_lists + level;
+    for (struct list_elem *e = list_begin(buddy_list);  
+            e != list_end (buddy_list); e = list_next(e)) {
+        pmap_pfa_free_entry_t fe1 = 
+            list_entry(e, struct pmap_pfa_free_entry, elem);
+        page_id_t page1 = pa_to_page_id(
+            pmap_physmap_kva_to_pa((phys_addr_t)fe1)
+        );
+
+        if (page1 == page) {
+            return fe1;
+        }
+    }
+    return NULL;
+}
+
+void 
+pmap_pfa_get_state(size_t *level_buffer, size_t count) {
     REQUIRE(count >= BUDDY_LEVELS);
 
     PFA_LOCK(pfa);
@@ -658,16 +665,4 @@ void pmap_pfa_get_state(size_t *level_buffer, size_t count) {
     PFA_UNLOCK(pfa);
 }
 
-pmap_pfa_free_entry_t
-pmap_pfa_contains(unsigned int level, page_id_t page) {
-    struct list *buddy_list = NULL;
-    buddy_list = pfa->buddy_lists + level;
-    for (struct list_elem *e = list_begin(buddy_list);  e != list_end (buddy_list); e = list_next(e)) {
-        pmap_pfa_free_entry_t fe1 = list_entry(e, struct pmap_pfa_free_entry, elem);
-        page_id_t page1 = pa_to_page_id(pmap_physmap_kva_to_pa((phys_addr_t)fe1));
-        if (page1 == page) {
-            return fe1;
-        }
-    }
-    return NULL;
-}
+#endif /* CONFIG_DEBUG || CONFIG_TESTING */

@@ -230,7 +230,7 @@ void pmap_vm_init(phys_addr_t kernel_base,
     
     // RAM physmap
     vm_init_map_contiguous(pmap_kernel, &allocation_ptr,
-        PTE_TEMPLATE_PAGE_DEVICE_KERN_RW, /* PTE template */
+        PTE_TEMPLATE_PAGE_NORMAL_KERN_RW, /* PTE template */
         physmap_vm_base + 0x00,
         0x00 /* phys_base */, 
         ROUND_UP(ram_size, PAGE_SIZE) >> PAGE_SHIFT /* page count */
@@ -259,10 +259,13 @@ void pmap_vm_init(phys_addr_t kernel_base,
     memory and marked both the now extended bootstrap region as allocated.
     */
    pmap_pfa_init(
-       ram_base, 
-       ram_size,
-       KERNEL_SECTION_PA_BASE(__kernel_text),
-       KERNEL_SECTION_SIZE(__kernel_text),
-       allocation_ptr
+        ram_base, 
+        ram_size,
+        KERNEL_SECTION_PA_BASE(__kernel_text),
+        KERNEL_SECTION_SIZE(__kernel_text),
+        KERNEL_SECTION_PA_BASE(__kernel_ro_data),
+        KERNEL_SECTION_SIZE(__kernel_ro_data) 
+            + KERNEL_SECTION_SIZE(__kernel_rw_data),
+        allocation_ptr
    );
 }

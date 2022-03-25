@@ -24,4 +24,9 @@ void print_human_readable_size(uint64_t sz);
 void __vprintf(const char* format, va_list args, void (*output)(char, void*), void* aux);
 void __printf(const char* format, void (*output)(char, void*), void* aux, ...);
 
+/**
+ * Prints a struct of type *s_ptr to the console.
+ */
+#define PRINT_STRUCT(s_ptr) __builtin_dump_struct(s_ptr, printf)
+
 #endif /* LIB_STDIO */

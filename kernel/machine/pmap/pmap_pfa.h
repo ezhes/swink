@@ -3,11 +3,17 @@
 #include "lib/types.h"
 #include "pmap.h"
 
+/** Represents a page number */
+typedef uint32_t page_id_t;
+
 typedef enum pmap_page_type {
-    PMAP_PAGE_TYPE_FREE             = 0x00,
-    PMAP_PAGE_TYPE_KERNEL_DATA      = 0x01,
-    PMAP_PAGE_TYPE_KERNEL_TEXT      = 0x02,
-    PMAP_PAGE_TYPE_PAGE_TABLE       = 0x03,
+    /*
+    Note: There is no type for _FREE. The PFA is the sole source of truth for
+    physical frame free state.
+    */
+    PMAP_PAGE_TYPE_KERNEL_DATA      = 0x00,
+    PMAP_PAGE_TYPE_KERNEL_TEXT      = 0x01,
+    PMAP_PAGE_TYPE_PAGE_TABLE       = 0x02,
 } pmap_page_type_e;
 
 typedef struct pmap_page_metadata {
@@ -35,6 +41,8 @@ pmap_pfa_init(phys_addr_t ram_base,
               phys_addr_t ram_size,
               phys_addr_t kernel_text_base,
               phys_addr_t kernel_text_size,
+              phys_addr_t kernel_data_base,
+              phys_addr_t kernel_data_size,
               phys_addr_t bootstrap_pa_reserved);
 
 /**
@@ -51,9 +59,24 @@ phys_addr_t
 pmap_pfa_alloc_contig(size_t size, pmap_page_metadata_s *metadata);
 
 /**
- * Frees a single page
+ * Frees physical pages starting at ADDR and ranging to ADDR + SIZE
  */
 void
-pmap_pfa_free(phys_addr_t page);
+pmap_pfa_free_contig(phys_addr_t addr, size_t size);
+
+/**
+ * Get the metadata for a single page
+ */
+void
+pmap_pfa_mds_get_metadata(page_id_t page, pmap_page_metadata_s *metadata);
+
+
+/**
+ * Checks that all pages in range [page, page + count) are of type TYPE
+ * If the check fails, the a panic is triggered.
+ */
+void
+pmap_pfa_mds_require_range_type(page_id_t page, page_id_t count,
+                                pmap_page_type_e type);
 
 #endif /* PMAP_PFA_H */

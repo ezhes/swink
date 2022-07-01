@@ -14,7 +14,6 @@ Although I always strive for production quality code, this is chiefly a hobby/re
 - [ ] User processes
 - [ ] Fast user space context switching through [Lifeguard](/docs/watchpoints/lifeguard.md)
 - [ ] Multi-core support
-- [ ] Page table and system configuration protection under kernel ROP through [System Integrity Guard](/docs/watchpoints/system_integrity_guard.md)
 - [ ] Kernel control-flow integrity through [Shadow](/docs/watchpoints/shadow.md)
 - [ ] Fast kernel enclaves through [Shadow](/docs/watchpoints/shadow.md)
 
